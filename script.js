@@ -321,7 +321,9 @@
     setup() {
       const { w, h } = this;
       const mobile = w < 768;
-      if (this.mode === 'motes') {
+      if (this.mode === 'bars') {
+        this.setupBars();
+      } else if (this.mode === 'motes') {
         const n = mobile ? 50 : 120;
         // Where the trend line forms, chosen by screen shape so it stays clear of faces:
         // landscape rises through the sunset window; portrait (phones, upright tablets)
@@ -362,6 +364,7 @@
       const ctx = this.ctx;
       ctx.clearRect(0, 0, this.w, this.h);
       if (this.mode === 'motes') this.drawMotes();
+      else if (this.mode === 'bars') this.drawBars();
       else if (this.mode === 'charts') this.drawCharts();
       else this.drawCorridor();
     }
@@ -402,6 +405,103 @@
         g.addColorStop(0, rgba(AMBER, .7 * a)); g.addColorStop(1, rgba(AMBER, 0));
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ex, ey, 60, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = rgba(AMBER, a); ctx.beginPath(); ctx.arc(ex, ey, 4, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    // Mission section: particles settle into a bar chart in the open space next to
+    // (desktop) or below (phones) the statement. The area is measured from the text
+    // itself so it adapts to any screen and font size.
+    barsRegion() {
+      const st = $('.mission__statement');
+      const body = $('.mission__body');
+      const inner = $('.mission__inner');
+      if (!st || !body || !inner) return null;
+      const cr = this.c.getBoundingClientRect();
+      const sr = st.getBoundingClientRect();
+      const ir = inner.getBoundingClientRect();
+      const bodyTop = body.getBoundingClientRect().top - (gsap.getProperty(body, 'y') || 0);
+      if (this.w >= 768) {
+        let right = sr.left;
+        $$('.split-word', st).forEach((wd) => { right = Math.max(right, wd.getBoundingClientRect().right); });
+        const x1 = ir.right - cr.left;
+        const x0 = Math.max(right - cr.left + this.w * .05, x1 - 440);
+        const r = { x0, x1, y0: sr.top - cr.top + sr.height * .06, y1: sr.bottom - cr.top - sr.height * .04 };
+        return r.x1 - r.x0 >= 170 && r.y1 - r.y0 >= 140 ? r : null;
+      }
+      const r = { x0: ir.left - cr.left + 4, x1: ir.right - cr.left - 4, y0: sr.bottom - cr.top + 28, y1: bodyTop - cr.top - 28 };
+      return r.y1 - r.y0 >= 90 ? r : null;
+    }
+
+    setupBars() {
+      const { w, h } = this;
+      const reg = this.region = this.barsRegion();
+      const heights = [.34, .47, .42, .6, .68, .82, 1];
+      const n = heights.length;
+      this.bars = [];
+      const targets = [];
+      if (reg) {
+        const bw = (reg.x1 - reg.x0) / (n + (n - 1) * .45);
+        const sp = Math.min(9, Math.max(5, bw / 4));
+        const cols = Math.max(2, Math.round(bw / sp));
+        const maxH = reg.y1 - reg.y0;
+        heights.forEach((hf, b) => {
+          const bx = reg.x0 + b * bw * 1.45;
+          const bh = maxH * hf;
+          const hot = b === n - 1;
+          this.bars.push({ x: bx, y: reg.y1 - bh, w: bw, h: bh, hot });
+          const rows = Math.max(1, Math.floor(bh / sp));
+          for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+              // bottom rows land first so the bars grow upward
+              targets.push({ tx: bx + (c + .5) * (bw / cols), ty: reg.y1 - (r + .5) * (bh / rows), hot, d: (r / rows) * .45 + Math.random() * .08 });
+            }
+          }
+        });
+      }
+      // A few extra free-floating motes keep the drift lively before the chart forms
+      const extra = w < 768 ? 30 : 60;
+      for (let i = 0; i < extra; i++) targets.push({ tx: null });
+      this.pts = targets.map((t) => ({
+        ...t,
+        x: Math.random() * w, y: Math.random() * h,
+        vx: (Math.random() - .5) * .3, vy: (Math.random() - .5) * .3 - .1,
+        r: .8 + Math.random() * 1.2, ph: Math.random() * Math.PI * 2,
+        amber: t.hot || Math.random() < .12,
+      }));
+    }
+
+    drawBars() {
+      const { ctx, w, h, pts, bars, region: reg } = this;
+      const k = smooth(.12, .82, this.progress);
+      ctx.globalCompositeOperation = 'lighter';
+      if (reg && k > .35) {
+        const a = (k - .35) / .65;
+        bars.forEach((b) => { ctx.fillStyle = rgba(b.hot ? AMBER : TEAL, .08 * a); ctx.fillRect(b.x, b.y, b.w, b.h); });
+        ctx.strokeStyle = rgba(TEAL, .4 * a);
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(reg.x0 - 6, reg.y1 + 5); ctx.lineTo(reg.x1 + 6, reg.y1 + 5); ctx.stroke();
+      }
+      pts.forEach((p) => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.y < -10) p.y = h + 10; else if (p.y > h + 10) p.y = -10;
+        if (p.x < -10) p.x = w + 10; else if (p.x > w + 10) p.x = -10;
+        const kp = p.tx === null || !reg ? 0 : smooth(p.d, p.d + .55, k);
+        const x = kp ? p.x + (p.tx - p.x) * kp : p.x;
+        const y = kp ? p.y + (p.ty - p.y) * kp : p.y;
+        const tw = .55 + Math.sin(this.t * 2 + p.ph) * .35;
+        const col = p.amber ? AMBER : TEAL;
+        const s = p.r * (1 + kp * .4);
+        ctx.fillStyle = rgba(col, (.45 + .45 * kp) * (kp > .9 ? 1 : tw));
+        ctx.fillRect(x - s / 2, y - s / 2, s, s);
+      });
+      if (reg && k > .65) {
+        const hot = bars[bars.length - 1];
+        const a = (k - .65) / .35;
+        const cx = hot.x + hot.w / 2, cy = hot.y - 4;
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 70);
+        g.addColorStop(0, rgba(AMBER, .55 * a)); g.addColorStop(1, rgba(AMBER, 0));
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, 70, 0, Math.PI * 2); ctx.fill();
       }
       ctx.globalCompositeOperation = 'source-over';
     }
@@ -542,7 +642,13 @@
 
   const fields = new Map();
   function initFields() {
+    // Only reserve room for the mission chart when it will actually be drawn
+    // (no gap for reduced-motion visitors or if the libraries fail to load)
+    const bars = $('canvas.field[data-mode="bars"]');
+    if (bars) bars.closest('section').classList.add('has-chart');
     $$('canvas.field').forEach((c) => fields.set(c.dataset.mode, new Field(c)));
+    // Chart areas measured from text need re-measuring after fonts load or layout refreshes
+    ScrollTrigger.addEventListener('refresh', () => fields.forEach((f) => { if (f.mode === 'bars') f.resize(); }));
     let last = performance.now();
     const loop = (now) => {
       const dt = Math.min(64, now - last); last = now;
@@ -751,8 +857,8 @@
       gsap.set('.mission__body', { opacity: 0, y: 30 });
       const tl = gsap.timeline({
         scrollTrigger: ctx.conditions.desktop
-          ? { trigger: '.mission', start: 'top top', end: '+=150%', pin: true, scrub: true }
-          : { trigger: '.mission', start: 'top 70%', end: 'bottom 70%', scrub: true },
+          ? { trigger: '.mission', start: 'top top', end: '+=150%', pin: true, scrub: true, onUpdate: (self) => setField('bars', self.progress) }
+          : { trigger: '.mission', start: 'top 70%', end: 'bottom 70%', scrub: true, onUpdate: (self) => setField('bars', self.progress) },
       });
       tl.to(words, { opacity: 1, ease: 'none', stagger: .1, duration: .3 })
         .to('.mission__body', { opacity: 1, y: 0, ease: 'power2.out', duration: .6 }, '-=.2');
