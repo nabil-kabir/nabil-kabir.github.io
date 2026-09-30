@@ -252,18 +252,38 @@
     const inner = $('.case-preview__inner', preview);
     const xTo = gsap.quickTo(preview, 'x', { duration: .6, ease: 'power3' });
     const yTo = gsap.quickTo(preview, 'y', { duration: .6, ease: 'power3' });
-    let current = null;
-    window.addEventListener('pointermove', (e) => { xTo(e.clientX); yTo(e.clientY); }, { passive: true });
-    cases.forEach((c) => {
-      const row = $('.case__row', c);
-      row.addEventListener('pointerenter', () => {
-        if (c.classList.contains('is-open')) return;
-        if (current !== c) { inner.innerHTML = chartSVG(c.dataset.chart); drawLines(inner); current = c; }
-        gsap.to(preview, { opacity: 1, scale: 1, duration: .5, ease: 'expo.out' });
-      });
-      row.addEventListener('pointerleave', () => gsap.to(preview, { opacity: 0, scale: .6, duration: .4, ease: 'power3.out' }));
-      row.addEventListener('click', () => gsap.to(preview, { opacity: 0, scale: .6, duration: .3 }));
-    });
+    let current = null;   // case whose chart is loaded in the card
+    let shown = null;     // case the card is currently shown for
+    let px = -1, py = -1; // last known pointer position
+
+    const show = (c) => {
+      if (shown === c) return;
+      shown = c;
+      if (current !== c) { inner.innerHTML = chartSVG(c.dataset.chart); drawLines(inner); current = c; }
+      gsap.to(preview, { opacity: 1, scale: 1, duration: .5, ease: 'expo.out', overwrite: 'auto' });
+    };
+    const hide = () => {
+      if (!shown) return;
+      shown = null;
+      gsap.to(preview, { opacity: 0, scale: .6, duration: .35, ease: 'power3.out', overwrite: 'auto' });
+    };
+    // Decide from what is actually under the pointer. Hover events alone miss the
+    // case where the page scrolls under a still mouse (no "leave" event fires),
+    // which used to leave the card stuck on screen in other sections.
+    const update = () => {
+      const el = px < 0 ? null : document.elementFromPoint(px, py);
+      const c = el && el.closest('.case__row') ? el.closest('.case') : null;
+      if (c && !c.classList.contains('is-open')) show(c); else hide();
+    };
+
+    window.addEventListener('pointermove', (e) => {
+      px = e.clientX; py = e.clientY;
+      xTo(px); yTo(py);
+      update();
+    }, { passive: true });
+    window.addEventListener('scroll', update, { passive: true }); // Lenis drives native scroll, so this fires either way
+    document.addEventListener('pointerleave', () => { px = py = -1; hide(); });
+    cases.forEach((c) => $('.case__row', c).addEventListener('click', () => setTimeout(update, 0)));
   }
 
   /* ------------------------------------------------------------------------
