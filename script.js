@@ -323,12 +323,15 @@
       const mobile = w < 768;
       if (this.mode === 'motes') {
         const n = mobile ? 50 : 120;
+        // Where the trend line forms, chosen by screen shape so it stays clear of faces:
+        // landscape rises through the sunset window; portrait (phones, upright tablets)
+        // arcs over the wall above Nabil's head.
+        const portrait = h > w;
         this.pts = Array.from({ length: n }, (_, i) => {
           const f = i / (n - 1);
-          // Desktop: rises through the open sunset window, clear of faces
-          const tx = w * (mobile ? .12 + f * .76 : .62 + f * .31);
+          const tx = w * (portrait ? .30 + f * .63 : .62 + f * .31);
           const trend = Math.pow(f, 1.4) + Math.sin(f * 9) * .05;
-          const ty = h * (mobile ? .36 - trend * .2 : .45 - trend * .29);
+          const ty = h * (portrait ? .20 - trend * .10 : .45 - trend * .29);
           return {
             x: Math.random() * w, y: Math.random() * h,
             vx: (Math.random() - .5) * .25, vy: -(.15 + Math.random() * .45),
@@ -365,9 +368,8 @@
 
     drawMotes() {
       const { ctx, w, h, pts } = this;
-      // The chart forms on desktop only: on a phone's narrow crop the line would cross the face.
-      // data-form="off" disables it everywhere.
-      const k = this.c.dataset.form === 'off' || w < 768 ? 0 : smooth(.08, .72, this.progress);
+      // data-form="off" keeps the motes drifting without forming the chart.
+      const k = this.c.dataset.form === 'off' ? 0 : smooth(.08, .72, this.progress);
       ctx.globalCompositeOperation = 'lighter';
       const pos = pts.map((p) => {
         p.x += p.vx; p.y += p.vy;
