@@ -287,7 +287,7 @@ body {
 .media img, .media video { object-fit: cover; }
 .media picture img { width: 100%; height: 100%; }
 .pillars__fallback img { object-position: 72% 35%; }
-.cta__fallback img { object-position: 52% 22%; }
+.cta__fallback img { object-position: 60% 20%; }
 .media video { opacity: 0; transition: opacity 1s; }
 .has-video .media video { opacity: 1; }
 .has-video .media .fallback, .has-video .media .field { opacity: 0; }
@@ -302,8 +302,8 @@ body {
   position: relative; height: 100%; overflow: hidden;
   transform-origin: 50% 0;
 }
-.hero__fallback { transform-origin: 66% 25%; }
-.hero__fallback img { width: 100%; height: 100%; object-fit: cover; object-position: 66% 20%; }
+.hero__fallback { transform-origin: 52% 25%; }
+.hero__fallback img { width: 100%; height: 100%; object-fit: cover; object-position: 52% 22%; }
 .hero__dim { position: absolute; inset: 0; z-index: 3; background: var(--ink); opacity: 0; pointer-events: none; }
 .shade--hero {
   background:
@@ -620,7 +620,7 @@ body {
   .header__nav, .header .btn--pill { display: none; }
   .header__burger { display: block; }
 
-  .hero__fallback img { object-position: 61% 20%; }
+  .hero__fallback img { object-position: 51% 22%; }
   .pillars__fallback img { object-position: 70% 30%; }
   .hero__foot { flex-direction: column; align-items: flex-start; gap: 1.4rem; }
   .hero__cue i { height: 30px; }
