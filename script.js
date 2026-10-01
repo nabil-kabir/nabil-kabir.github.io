@@ -12,7 +12,8 @@
   const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
   const isMobile = () => matchMedia('(max-width: 767px)').matches;
   const conn = navigator.connection || {};
-  const saveData = !!conn.saveData || /2g|3g/.test(conn.effectiveType || '');
+  // Only skip heavy media for Data Saver or true 2G: '3g' estimates are common on perfectly usable connections
+  const saveData = !!conn.saveData || /(^|-)2g$/.test(conn.effectiveType || '');
   const hasGSAP = typeof window.gsap !== 'undefined' && typeof window.ScrollTrigger !== 'undefined';
 
   let lenis = null;
@@ -694,7 +695,89 @@
       });
     });
   }
-  const scrubOf = (sel) => { const v = $(sel + ' .scrub-video'); return v && v._scrub ? v._scrub : { set() {} }; };
+  /* ------------------------------------------------------------------------
+     Scroll-scrubbed image sequences
+     Every frame of a clip is a small WebP drawn straight onto a canvas, so
+     scrubbing never waits on video decoding (which made seeking feel laggy).
+     Same controller API as the videos: el._scrub.set(progress 0–1).
+     ------------------------------------------------------------------------ */
+  function initScrubSequences() {
+    $$('.scrub-seq').forEach((cv) => {
+      if (saveData) { cv.remove(); return; } // data-saver: keep the still photo
+      const section = cv.closest('section');
+      const count = +cv.dataset.count;
+      const pattern = isMobile() && cv.dataset.framesMobile ? cv.dataset.framesMobile : cv.dataset.frames;
+      const url = (i) => pattern.replace('{i}', String(i).padStart(3, '0'));
+      const frames = new Array(count);
+      const ctx = cv.getContext('2d');
+      const ctrl = { target: 0, drawn: -1, set(p) { this.target = p; } };
+      cv._scrub = ctrl;
+
+      // Never draw at more pixels than the frames actually have: extra resolution
+      // adds GPU work on every frame without making the picture any sharper.
+      const FRAME_W = isMobile() && cv.dataset.framesMobile ? 440 : 1280;
+      const size = () => {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const scale = Math.min(dpr, Math.max(1, (FRAME_W * 1.15) / cv.clientWidth));
+        cv.width = Math.round(cv.clientWidth * scale);
+        cv.height = Math.round(cv.clientHeight * scale);
+        ctrl.drawn = -1;
+      };
+      // object-fit: cover, centred
+      const draw = (img) => {
+        const s = Math.max(cv.width / img.naturalWidth, cv.height / img.naturalHeight);
+        const w = img.naturalWidth * s, h = img.naturalHeight * s;
+        ctx.drawImage(img, (cv.width - w) / 2, (cv.height - h) / 2, w, h);
+      };
+      // Nearest frame that has finished loading (while the rest stream in)
+      const nearest = (i) => {
+        for (let d = 0; d < count; d++) {
+          if (frames[i - d] && frames[i - d].complete && frames[i - d].naturalWidth) return i - d;
+          if (frames[i + d] && frames[i + d].complete && frames[i + d].naturalWidth) return i + d;
+        }
+        return -1;
+      };
+      const load = (i) => new Promise((res) => {
+        const img = new Image();
+        img.decoding = 'async';
+        img.onload = () => {
+          // Pre-decode in the background so the first draw of this frame doesn't stall.
+          // Not awaited: browsers may postpone decoding in hidden tabs.
+          img.decode().catch(() => {});
+          res(img);
+        };
+        img.onerror = () => res(img);
+        img.src = url(i);
+        frames[i] = img;
+      });
+
+      size();
+      new ResizeObserver(size).observe(cv);
+
+      // First frame unlocks the section; the rest load in order, a few at a time
+      load(0).then((first) => {
+        if (!first.naturalWidth) { cv.remove(); return; }
+        section.classList.add('has-video');
+        cv.dataset.ready = '1';
+        cv.dispatchEvent(new Event('seqready'));
+        let next = 1;
+        const worker = () => (next < count ? load(next++).then(worker) : null);
+        for (let k = 0; k < 6; k++) worker();
+      });
+
+      gsap.ticker.add(() => {
+        if (!cv.isConnected || !cv.dataset.ready) return;
+        // Follow the scroll directly: Lenis already smooths the scroll itself, and a
+        // second layer of easing here made the clip trail behind (felt like lag).
+        const idx = nearest(Math.round(ctrl.target * (count - 1)));
+        if (idx < 0 || idx === ctrl.drawn) return;
+        draw(frames[idx]);
+        ctrl.drawn = idx;
+      });
+    });
+  }
+
+  const scrubOf = (sel) => { const v = $(sel + ' .scrub-seq, ' + sel + ' .scrub-video'); return v && v._scrub ? v._scrub : { set() {} }; };
 
   /* ------------------------------------------------------------------------
      Lenis
@@ -801,13 +884,51 @@
     gsap.set('.hero__fallback', { scale: 1.15 });
     gsap.set('.header', { opacity: 0, y: -20 });
 
+    // With the intro clip loaded, the scroll plays in two acts: the laptop clip scrubs
+    // through the first half, crossfades into the boardroom photo, then the particle
+    // chart forms over the photo. Without the clip, the photo and chart use the whole scroll.
+    const VIDEO_END = .5;                   // clip finishes scrubbing here
+    const FADE_FROM = .42, FADE_TO = .58;   // crossfade clip → coded dashboard
+    const DASH_FROM = .5, DASH_TO = .8;     // dashboard numbers & charts animate in
+    const clamp01 = (x) => Math.min(1, Math.max(0, x));
+
+    // The "inside the laptop" dashboard, driven by scroll (scrubbed, not timed)
+    const dashTl = gsap.timeline({ paused: true });
+    $$('.hero__dash [data-dash]').forEach((el, i) => {
+      const o = { v: 0 }, end = +el.dataset.dash;
+      el.textContent = '0';
+      dashTl.to(o, { v: end, duration: .5, ease: 'power2.out', onUpdate: () => { el.textContent = Math.round(o.v); } }, i * .06);
+    });
+    dashTl.fromTo('.hero__dash .dash__bar', { scaleY: 0, transformOrigin: '50% 100%' }, { scaleY: 1, duration: .45, stagger: .06, ease: 'power3.out' }, .15)
+      .fromTo('.dash__card--line svg', { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', duration: .6, ease: 'power2.inOut' }, .1)
+      .fromTo('.dash__end', { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: .15, ease: 'back.out(3)' }, .66);
+    const RING = 2 * Math.PI * 44;
+    $$('.hero__dash .dash__seg').forEach((s, i) => {
+      const a = +s.dataset.from, b = +s.dataset.to;
+      gsap.set(s, { strokeDasharray: `0 ${RING}`, strokeDashoffset: -a * RING });
+      dashTl.to(s, { strokeDasharray: `${(b - a) * RING} ${RING}`, duration: .3, ease: 'power2.out' }, .25 + i * .07);
+    });
+    dashTl.progress(0);
+
+    const onHeroUpdate = (self) => {
+      const p = self.progress;
+      if (hero.classList.contains('has-video')) {
+        scrub.set(clamp01(p / VIDEO_END));
+        hero.style.setProperty('--reveal', smooth(FADE_FROM, FADE_TO, p).toFixed(3));
+        dashTl.progress(clamp01((p - DASH_FROM) / (DASH_TO - DASH_FROM)));
+      } else {
+        setField('motes', p);
+      }
+    };
+
     mm.add({ desktop: '(min-width: 768px)', mobile: '(max-width: 767px)' }, (ctx) => {
-      const len = ctx.conditions.desktop ? 2.5 : 1.5;
+      const len = ctx.conditions.desktop ? 3 : 2;
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: hero, start: 'top top', end: () => '+=' + innerHeight * len,
           pin: true, scrub: true, anticipatePin: 1,
-          onUpdate: (self) => { scrub.set(self.progress); setField('motes', self.progress); },
+          invalidateOnRefresh: true, // re-read values that depend on whether the intro clip loaded
+          onUpdate: onHeroUpdate,
         },
       });
       tl.fromTo('.hero__fallback', { scale: 1.15, yPercent: 0 }, { scale: 1, yPercent: -3, ease: 'none', duration: 1 }, 0)
@@ -816,10 +937,13 @@
           rotation: () => gsap.utils.random(-45, 45), scale: () => gsap.utils.random(.4, 1.6), opacity: 0,
           ease: 'power1.in', duration: .45, stagger: { each: .02, from: 'random' },
         }, .06)
-        .fromTo('.hero__line--signal', { scale: 1, yPercent: 0 }, { scale: 1.12, yPercent: -95, ease: 'power2.inOut', duration: .5 }, .2)
+        // With the dashboard filling the upper area, "to decisions." stays low instead of rising into it
+        .fromTo('.hero__line--signal', { scale: 1, yPercent: 0 }, {
+          scale: 1.12, yPercent: () => (hero.classList.contains('has-video') ? -10 : -95), ease: 'power2.inOut', duration: .5,
+        }, .2)
         .fromTo(['.hero__eyebrow', '.hero__foot'], { opacity: 1 }, { opacity: 0, ease: 'none', duration: .2 }, .04)
-        .fromTo('.hero__stage', { scale: 1, borderRadius: 0 }, { scale: .92, borderRadius: 28, ease: 'power2.in', duration: .3 }, .7)
-        .fromTo('.hero__dim', { opacity: 0 }, { opacity: .6, ease: 'power2.in', duration: .3 }, .7);
+        .fromTo('.hero__stage', { scale: 1, borderRadius: 0 }, { scale: .92, borderRadius: 28, ease: 'power2.in', duration: .2 }, .8)
+        .fromTo('.hero__dim', { opacity: 0 }, { opacity: .6, ease: 'power2.in', duration: .2 }, .8);
     });
   }
 
@@ -1068,7 +1192,17 @@
     const fonts = document.fonts ? document.fonts.ready : Promise.resolve();
     const minTime = new Promise((r) => setTimeout(r, reduceMotion ? 200 : 1100));
     const cap = new Promise((r) => setTimeout(r, 3500));
-    const ready = Promise.race([Promise.all([imgReady, fonts, minTime]), cap]);
+    // Hold the curtain until the intro clip's first frame is ready too (or it fails / isn't
+    // used), so visitors don't see the boardroom photo flash before the laptop clip.
+    const heroVideo = $('.hero .scrub-seq, .hero .scrub-video');
+    const videoReady = new Promise((r) => {
+      if (!heroVideo || !heroVideo.isConnected || heroVideo.readyState >= 2 || heroVideo.dataset.ready) return r();
+      heroVideo.addEventListener('loadeddata', r, { once: true });
+      heroVideo.addEventListener('seqready', r, { once: true });
+      heroVideo.addEventListener('error', r, { once: true });
+      new MutationObserver(() => { if (!heroVideo.isConnected) r(); }).observe(heroVideo.parentNode, { childList: true });
+    });
+    const ready = Promise.race([Promise.all([imgReady, fonts, minTime, videoReady]), cap]);
 
     const s = { v: 0 };
     const render = () => {
@@ -1103,7 +1237,7 @@
     if (!hasGSAP) {
       // Libraries failed to load: show the static, fully readable page
       const pre = $('.preloader'); if (pre) pre.remove();
-      $$('.scrub-video').forEach((v) => v.remove());
+      $$('.scrub-video, .scrub-seq').forEach((v) => v.remove());
       initCases();
       return;
     }
@@ -1113,7 +1247,7 @@
 
     if (reduceMotion) {
       // Calm version: no smooth scroll, pins, splits or scrubbing
-      $$('.scrub-video').forEach((v) => v.remove());
+      $$('.scrub-video, .scrub-seq').forEach((v) => v.remove());
       $$('canvas.field').forEach((c) => c.remove());
       const bar = $('.progress i');
       addEventListener('scroll', () => {
@@ -1128,6 +1262,7 @@
     initLenis();
     initFields();
     initScrubVideos();
+    initScrubSequences();
     initChrome();
 
     const mm = gsap.matchMedia();
