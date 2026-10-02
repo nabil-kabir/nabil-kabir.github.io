@@ -119,8 +119,8 @@
                  alt="Syed Nabil Kabir leading a Weekly Business Review with senior stakeholders">
           </picture>
           <canvas class="scrub-seq" aria-hidden="true"
-                  data-frames="assets/frames/hero/{i}.webp"
-                  data-frames-mobile="assets/frames/hero-m/{i}.webp"
+                  data-frames="assets/frames/hero/{i}.webp" data-w="1280"
+                  data-frames-mobile="assets/frames/hero-m/{i}.webp" data-w-mobile="440"
                   data-count="124"></canvas>
           <canvas class="field" data-mode="motes" aria-hidden="true"></canvas>
           <div class="shade shade--hero" aria-hidden="true"></div>
@@ -233,10 +233,10 @@
     <!-- 04 PILLARS -->
     <section class="pillars" id="pillars">
       <div class="pillars__media media">
-        <video class="scrub-video" muted playsinline preload="none" aria-hidden="true"
-               data-src="assets/video/scene2-analyst.mp4"
-               data-src-mobile="assets/video/scene2-analyst-mobile.mp4"
-               data-poster="assets/video/scene2-analyst-poster.jpg"></video>
+        <canvas class="scrub-seq" aria-hidden="true"
+                data-frames="assets/frames/pillars/{i}.webp" data-w="1120"
+                data-frames-mobile="assets/frames/pillars-m/{i}.webp" data-w-mobile="700"
+                data-count="62"></canvas>
         <picture class="fallback pillars__fallback">
           <source srcset="assets/img/bg-analyst.webp" type="image/webp">
           <img src="assets/img/bg-analyst.jpg" width="1920" height="1072" loading="lazy"
@@ -491,16 +491,15 @@
     <section class="cta" id="contact">
       <div class="cta__stage">
         <div class="cta__media media">
-          <video class="scrub-video" muted playsinline preload="none" aria-hidden="true"
-                 data-src="assets/video/scene3-command.mp4"
-                 data-src-mobile="assets/video/scene3-command-mobile.mp4"
-                 data-poster="assets/video/scene3-command-poster.jpg"></video>
           <picture class="fallback cta__fallback">
-            <source srcset="assets/img/bg-storyteller.webp" type="image/webp">
-            <img src="assets/img/bg-storyteller.jpg" width="1920" height="1072" loading="lazy"
-                 alt="Syed Nabil Kabir presenting a business intelligence dashboard to his team">
+            <source srcset="assets/img/bg-scene3.webp" type="image/webp">
+            <img src="assets/img/bg-scene3.jpg" width="1920" height="1072" loading="lazy"
+                 alt="Syed Nabil Kabir at his desk at dusk, about to turn his laptop toward you">
           </picture>
           <div class="shade shade--cta" aria-hidden="true"></div>
+          <!-- Scroll-driven: camera pushes in, amber light blooms from the laptop, then a warm veil settles behind the text -->
+          <div class="cta__bloom" aria-hidden="true"></div>
+          <div class="cta__veil" aria-hidden="true"></div>
         </div>
         <div class="cta__content container">
           <p class="label">Next chapter</p>

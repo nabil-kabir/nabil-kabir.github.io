@@ -287,7 +287,20 @@ body {
 .media img, .media video { object-fit: cover; }
 .media picture img { width: 100%; height: 100%; }
 .pillars__fallback img { object-position: 72% 35%; }
-.cta__fallback img { object-position: 60% 20%; }
+.cta__fallback { transform-origin: 50% 72%; }
+.cta__fallback img { object-position: 50% 40%; }
+/* Light that blooms out of the laptop screen (centred on the laptop, ~72% down the frame) */
+.media .cta__bloom {
+  inset: auto; left: 50%; top: 72%;
+  width: 130vmax; height: 130vmax; margin: -65vmax 0 0 -65vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,228,176,.95) 0%, rgba(242,179,91,.75) 12%, rgba(242,179,91,.3) 30%, rgba(242,179,91,0) 58%);
+  mix-blend-mode: screen;
+  opacity: 0; transform: scale(.12);
+  pointer-events: none;
+}
+/* Warm dark veil that settles over the glow so the headline and buttons stay readable */
+.cta__veil { background: radial-gradient(90% 75% at 50% 62%, rgba(40,22,6,.45), rgba(7,9,12,.88)); opacity: 0; pointer-events: none; }
 .media video, .media .scrub-seq { opacity: 0; transition: opacity 1s; }
 .has-video .media video, .has-video .media .scrub-seq { opacity: 1; }
 .has-video .media .fallback, .has-video .media .field { opacity: 0; }
@@ -614,7 +627,7 @@ body {
    ========================================================================== */
 .cta { position: relative; height: 100vh; height: 100svh; }
 .cta__stage { position: relative; height: 100%; overflow: hidden; display: grid; align-items: end; padding-bottom: clamp(2.5rem, 7vh, 5rem); }
-.shade--cta { background: linear-gradient(180deg, rgba(7,9,12,.15) 20%, rgba(7,9,12,.7) 55%, rgba(7,9,12,.92) 85%), radial-gradient(70% 70% at 50% 40%, rgba(7,9,12,.1), rgba(7,9,12,.75) 100%), linear-gradient(180deg, var(--midnight) 0%, rgba(7,9,12,0) 25%, rgba(7,9,12,0) 70%, var(--ink) 100%); }
+.shade--cta { background: linear-gradient(180deg, rgba(7,9,12,.55) 0%, rgba(7,9,12,.08) 22%, rgba(7,9,12,.12) 60%, rgba(7,9,12,.72) 88%, var(--ink) 100%), radial-gradient(85% 80% at 50% 50%, rgba(7,9,12,0) 55%, rgba(7,9,12,.6) 100%); }
 .cta__content { position: relative; z-index: 2; text-align: center; display: grid; justify-items: center; }
 .cta__title { margin-top: 1.4rem; font-size: clamp(2.6rem, min(6.6vw, 11vh), 7.5rem); line-height: .88; --ls: -.055em; font-weight: 800; text-transform: uppercase; }
 .cta__line { display: block; }

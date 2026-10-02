@@ -170,7 +170,7 @@
       let dest = id === '#top' ? 0 : target;
       // Land on the assembled CTA rather than the start of its pin
       if (id === '#contact' && ctaTrigger) {
-        dest = ctaTrigger.start + (ctaTrigger.end - ctaTrigger.start) * 0.85;
+        dest = ctaTrigger.start + (ctaTrigger.end - ctaTrigger.start) * 0.98;
       }
       if (lenis) lenis.scrollTo(dest, { duration: 1.6, easing: (t) => 1 - Math.pow(1 - t, 4) });
       else if (typeof dest === 'number') window.scrollTo({ top: dest, behavior: reduceMotion ? 'auto' : 'smooth' });
@@ -715,7 +715,7 @@
 
       // Never draw at more pixels than the frames actually have: extra resolution
       // adds GPU work on every frame without making the picture any sharper.
-      const FRAME_W = isMobile() && cv.dataset.framesMobile ? 440 : 1280;
+      const FRAME_W = +(isMobile() && cv.dataset.framesMobile ? cv.dataset.wMobile : cv.dataset.w) || 1280;
       const size = () => {
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         const scale = Math.min(dpr, Math.max(1, (FRAME_W * 1.15) / cv.clientWidth));
@@ -755,7 +755,7 @@
       new ResizeObserver(size).observe(cv);
 
       // First frame unlocks the section; the rest load in order, a few at a time
-      load(0).then((first) => {
+      const start = () => load(0).then((first) => {
         if (!first.naturalWidth) { cv.remove(); return; }
         section.classList.add('has-video');
         cv.dataset.ready = '1';
@@ -764,15 +764,31 @@
         const worker = () => (next < count ? load(next++).then(worker) : null);
         for (let k = 0; k < 6; k++) worker();
       });
+      // The hero loads straight away; later sections wait until they're about to scroll in
+      if (section.classList.contains('hero')) start();
+      // refreshPriority -1: measured after the pins above it exist, so the distance is right
+      else ScrollTrigger.create({ trigger: section, start: 'top bottom+=150%', once: true, onEnter: start, refreshPriority: -1 });
 
       gsap.ticker.add(() => {
         if (!cv.isConnected || !cv.dataset.ready) return;
         // Follow the scroll directly: Lenis already smooths the scroll itself, and a
         // second layer of easing here made the clip trail behind (felt like lag).
-        const idx = nearest(Math.round(ctrl.target * (count - 1)));
-        if (idx < 0 || idx === ctrl.drawn) return;
-        draw(frames[idx]);
-        ctrl.drawn = idx;
+        // Between two frames, blend them by the in-between amount, so motion looks
+        // continuous instead of stepping from frame to frame.
+        const pos = ctrl.target * (count - 1);
+        const key = Math.round(pos * 20) / 20;           // redraw only on visible change
+        if (key === ctrl.drawn) return;
+        const a = Math.floor(pos), b = Math.min(count - 1, a + 1), t = pos - a;
+        const ok = (i) => frames[i] && frames[i].complete && frames[i].naturalWidth;
+        if (ok(a) && ok(b)) {
+          ctx.globalAlpha = 1; draw(frames[a]);
+          if (t > .02 && b !== a) { ctx.globalAlpha = t; draw(frames[b]); ctx.globalAlpha = 1; }
+        } else {
+          const idx = nearest(Math.round(pos));
+          if (idx < 0) return;
+          draw(frames[idx]);
+        }
+        ctrl.drawn = key;
       });
     });
   }
@@ -1015,7 +1031,6 @@
           trigger: section, start: 'top top', end: () => '+=' + dist(),
           pin: true, scrub: 1, invalidateOnRefresh: true,
           onUpdate: (self) => {
-            scrub.set(self.progress);
             setField('charts', self.progress);
             const idx = Math.min(3, Math.floor(self.progress * 3) + 1);
             if (idx !== lastIdx) { lastIdx = idx; count.textContent = '0' + idx; }
@@ -1027,13 +1042,23 @@
         scale: 1.04, xPercent: -3, ease: 'none',
         scrollTrigger: { trigger: section, start: 'top top', end: () => '+=' + dist(), scrub: true, invalidateOnRefresh: true },
       });
-      cards.forEach((c) => {
-        gsap.from(c, {
-          opacity: 0, y: 80, rotation: 3, duration: 1, ease: 'expo.out',
-          scrollTrigger: { trigger: c, containerAnimation: tween, start: 'left 92%' },
+      // Reveal each card once it has slid into view, or already slid past it (a fast
+      // scroll can jump over a card). Checked whenever the track actually moves, which
+      // is more reliable than per-card triggers inside the horizontal scroll.
+      const shown = new Set();
+      gsap.set(cards, { opacity: 0, y: 80, rotation: 3 });
+      const revealCards = () => {
+        cards.forEach((c) => {
+          if (shown.has(c) || c.getBoundingClientRect().left > innerWidth * .92) return;
+          shown.add(c);
+          gsap.to(c, { opacity: 1, y: 0, rotation: 0, duration: 1, ease: 'expo.out', overwrite: 'auto' });
+          drawIn($('.pillar__icon', c));
         });
-        ScrollTrigger.create({ trigger: c, containerAnimation: tween, start: 'left 75%', once: true, onEnter: () => drawIn($('.pillar__icon', c)) });
-      });
+      };
+      // The clip follows the cards' actual (smoothed) movement, so both glide together
+      tween.eventCallback('onUpdate', () => { scrub.set(tween.progress()); revealCards(); });
+      ScrollTrigger.addEventListener('refresh', revealCards);
+      revealCards();
 
       // Subtle tilt toward the cursor
       const tilts = cards.map((c) => {
@@ -1050,7 +1075,7 @@
         c.addEventListener('pointerleave', leave);
         return () => { c.removeEventListener('pointermove', move); c.removeEventListener('pointerleave', leave); };
       });
-      return () => { delete section.dataset.cursorLabel; tilts.forEach((f) => f()); };
+      return () => { delete section.dataset.cursorLabel; tilts.forEach((f) => f()); ScrollTrigger.removeEventListener('refresh', revealCards); };
     });
 
     mm.add('(max-width: 767px)', () => {
@@ -1119,7 +1144,6 @@
   }
 
   function initCTA(mm) {
-    const scrub = scrubOf('.cta');
     const l1 = units($$('.cta__line')[0]);
     const l2 = units($$('.cta__line')[1]);
     const rest = ['.cta__content .label', '.cta__sub', '.cta__actions', '.cta__meta'];
@@ -1127,23 +1151,25 @@
     mm.add({ desktop: '(min-width: 768px)', mobile: '(max-width: 767px)' }, (ctx) => {
       if (ctx.conditions.desktop) {
         const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: '.cta', start: 'top top', end: '+=200%', pin: true, scrub: true,
-            onUpdate: (self) => { scrub.set(self.progress); setField('corridor', self.progress); },
-          },
+          scrollTrigger: { trigger: '.cta', start: 'top top', end: '+=200%', pin: true, scrub: true },
         });
         ctaTrigger = tl.scrollTrigger;
-        tl.fromTo('.cta__media', { scale: 1.18 }, { scale: 1, ease: 'none', duration: 1 }, 0)
-          .fromTo(rest[0], { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: .1 }, .12)
-          .fromTo(l1, { yPercent: 115, rotation: 6 }, { yPercent: 0, rotation: 0, ease: 'power3.out', stagger: .012, duration: .25 }, .15)
-          .fromTo(l2, { yPercent: 115, rotation: 6 }, { yPercent: 0, rotation: 0, ease: 'power3.out', stagger: .02, duration: .25 }, .32)
-          .fromTo(rest.slice(1), { opacity: 0, y: 30 }, { opacity: 1, y: 0, ease: 'power2.out', stagger: .05, duration: .15 }, .5);
+        // Act 1: push in toward the laptop while its light blooms. Act 2: a warm veil settles
+        // and the headline, then the buttons, appear in that light.
+        tl.fromTo('.cta__fallback', { scale: 1 }, { scale: 1.3, ease: 'power1.in', duration: .6 }, 0)
+          .fromTo('.cta__bloom', { opacity: .15, scale: .12 }, { opacity: .95, scale: 1, ease: 'sine.inOut', duration: .5 }, .04)
+          .fromTo('.cta__veil', { opacity: 0 }, { opacity: .7, ease: 'power1.inOut', duration: .22 }, .48)
+          .fromTo(rest[0], { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: .08 }, .55)
+          .fromTo(l1, { yPercent: 115, rotation: 6 }, { yPercent: 0, rotation: 0, ease: 'power3.out', stagger: .01, duration: .18 }, .57)
+          .fromTo(l2, { yPercent: 115, rotation: 6 }, { yPercent: 0, rotation: 0, ease: 'power3.out', stagger: .015, duration: .18 }, .68)
+          .fromTo(rest.slice(1), { opacity: 0, y: 30 }, { opacity: 1, y: 0, ease: 'power2.out', stagger: .04, duration: .12 }, .8);
         return () => { ctaTrigger = null; };
       }
-      ScrollTrigger.create({
-        trigger: '.cta', start: 'top bottom', end: 'bottom top',
-        onUpdate: (self) => { scrub.set(self.progress); setField('corridor', self.progress); },
-      });
+      // Phones: the same push-in and bloom, linked to scrolling the section into view
+      gsap.timeline({ scrollTrigger: { trigger: '.cta', start: 'top 85%', end: 'center 45%', scrub: true } })
+        .fromTo('.cta__fallback', { scale: 1 }, { scale: 1.25, ease: 'none' }, 0)
+        .fromTo('.cta__bloom', { opacity: .15, scale: .12 }, { opacity: .9, scale: 1, ease: 'sine.inOut' }, 0)
+        .fromTo('.cta__veil', { opacity: 0 }, { opacity: .7, ease: 'none', duration: .5 }, .5);
       const tl = gsap.timeline({ scrollTrigger: { trigger: '.cta__content', start: 'top 80%' } });
       tl.from([...l1, ...l2], { yPercent: 115, duration: 1.2, ease: 'expo.out', stagger: .02 })
         .from(rest, { opacity: 0, y: 30, duration: 1, ease: 'expo.out', stagger: .08 }, '-=.8');
