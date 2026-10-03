@@ -1144,31 +1144,88 @@
   }
 
   function initCTA(mm) {
+    const scrub = scrubOf('.cta');
+    const clamp01 = (x) => Math.min(1, Math.max(0, x));
     const l1 = units($$('.cta__line')[0]);
     const l2 = units($$('.cta__line')[1]);
     const rest = ['.cta__content .label', '.cta__sub', '.cta__actions', '.cta__meta'];
 
+    // Where the laptop's lit display sits in the clip's final frame (fractions of the frame),
+    // measured from the last frame. Used to put the closing text ON the laptop screen.
+    const SCREEN = { x0: .2547, y0: .3264, x1: .6969, y1: .8278 };
+    const FRAME_AR = 1280 / 720;
+    const cta = $('.cta');
+    const placeOnScreen = () => {
+      const stage = $('.cta__stage');
+      const W = stage.clientWidth, H = stage.clientHeight;
+      // Same "cover" fit the frame canvas uses
+      const s = Math.max(W / FRAME_AR, H) / H;
+      const dw = H * s * FRAME_AR, dh = H * s;
+      const ox = (W - dw) / 2, oy = (H - dh) / 2;
+      const r = { x: ox + SCREEN.x0 * dw, y: oy + SCREEN.y0 * dh, w: (SCREEN.x1 - SCREEN.x0) * dw, h: (SCREEN.y1 - SCREEN.y0) * dh };
+      const fits = cta.classList.contains('has-video') && r.x >= 0 && r.y >= 0 && r.x + r.w <= W && r.y + r.h <= H && r.w >= 460;
+      cta.classList.toggle('on-screen', fits);
+      if (fits) {
+        // A hair inside the bezel so the panel never shows a seam
+        const inset = r.w * .006;
+        const u = { x: r.x + inset, y: r.y + inset, w: r.w - inset * 2, h: r.h - inset * 2 };
+        // Zoom further into the laptop so the screen (and the text on it) is as large as the
+        // window comfortably allows: below the menu bar, inside the edges.
+        const top = 84, bottom = 10, side = 24;
+        const Z = Math.max(1, Math.min(1.6, (H - top - bottom) / u.h, (W - side * 2) / u.w));
+        const zx = (W - u.w * Z) / 2 - u.x * Z;            // centre the screen horizontally
+        const zy = top + (H - top - bottom - u.h * Z) / 2 - u.y * Z;
+        const set = (k, v) => cta.style.setProperty(k, v);
+        set('--z', Z); set('--zx', zx + 'px'); set('--zy', zy + 'px');
+        // Display panel lives inside the zoomed media layer: unzoomed coordinates
+        set('--ux', u.x + 'px'); set('--uy', u.y + 'px'); set('--uw', u.w + 'px'); set('--uh', u.h + 'px');
+        // Text sits outside it: final, zoomed coordinates
+        set('--sx', (u.x * Z + zx) + 'px'); set('--sy', (u.y * Z + zy) + 'px');
+        set('--sw', (u.w * Z) + 'px'); set('--sh', (u.h * Z) + 'px');
+      }
+    };
+
     mm.add({ desktop: '(min-width: 768px)', mobile: '(max-width: 767px)' }, (ctx) => {
       if (ctx.conditions.desktop) {
+        placeOnScreen();
+        const seq = $('.cta .scrub-seq');
+        if (seq) seq.addEventListener('seqready', placeOnScreen);
+        addEventListener('resize', placeOnScreen);
+        ScrollTrigger.addEventListener('refresh', placeOnScreen);
         const tl = gsap.timeline({
-          scrollTrigger: { trigger: '.cta', start: 'top top', end: '+=200%', pin: true, scrub: true },
+          scrollTrigger: {
+            trigger: '.cta', start: 'top top', end: '+=200%', pin: true, scrub: true,
+            // The laptop-turn clip (if loaded) plays through the first 55% of the pin
+            onUpdate: (self) => {
+              scrub.set(clamp01(self.progress / .55));
+              // Zoom into the laptop as the clip finishes (only used in the on-screen layout)
+              cta.style.setProperty('--zp', smooth(.42, .55, self.progress).toFixed(3));
+            },
+          },
         });
         ctaTrigger = tl.scrollTrigger;
-        // Act 1: push in toward the laptop while its light blooms. Act 2: a warm veil settles
-        // and the headline, then the buttons, appear in that light.
+        // Act 1: the laptop-turn clip plays (or, without it, the photo pushes in). Act 2: light
+        // blooms from the laptop screen, a warm veil settles, then the headline and buttons appear.
         tl.fromTo('.cta__fallback', { scale: 1 }, { scale: 1.3, ease: 'power1.in', duration: .6 }, 0)
-          .fromTo('.cta__bloom', { opacity: .15, scale: .12 }, { opacity: .95, scale: 1, ease: 'sine.inOut', duration: .5 }, .04)
+          .fromTo('.cta__bloom', { opacity: 0, scale: .12 }, { opacity: .95, scale: 1, ease: 'sine.inOut', duration: .3 }, .3)
           .fromTo('.cta__veil', { opacity: 0 }, { opacity: .7, ease: 'power1.inOut', duration: .22 }, .48)
+          .fromTo('.cta__display', { opacity: 0 }, { opacity: 1, ease: 'power1.inOut', duration: .08 }, .55)
           .fromTo(rest[0], { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: .08 }, .55)
           .fromTo(l1, { yPercent: 115, rotation: 6 }, { yPercent: 0, rotation: 0, ease: 'power3.out', stagger: .01, duration: .18 }, .57)
           .fromTo(l2, { yPercent: 115, rotation: 6 }, { yPercent: 0, rotation: 0, ease: 'power3.out', stagger: .015, duration: .18 }, .68)
           .fromTo(rest.slice(1), { opacity: 0, y: 30 }, { opacity: 1, y: 0, ease: 'power2.out', stagger: .04, duration: .12 }, .8);
-        return () => { ctaTrigger = null; };
+        return () => {
+          ctaTrigger = null;
+          if (seq) seq.removeEventListener('seqready', placeOnScreen);
+          removeEventListener('resize', placeOnScreen);
+          ScrollTrigger.removeEventListener('refresh', placeOnScreen);
+          cta.classList.remove('on-screen');
+        };
       }
       // Phones: the same push-in and bloom, linked to scrolling the section into view
-      gsap.timeline({ scrollTrigger: { trigger: '.cta', start: 'top 85%', end: 'center 45%', scrub: true } })
+      gsap.timeline({ scrollTrigger: { trigger: '.cta', start: 'top 85%', end: 'center 45%', scrub: true, onUpdate: (self) => scrub.set(clamp01(self.progress / .6)) } })
         .fromTo('.cta__fallback', { scale: 1 }, { scale: 1.25, ease: 'none' }, 0)
-        .fromTo('.cta__bloom', { opacity: .15, scale: .12 }, { opacity: .9, scale: 1, ease: 'sine.inOut' }, 0)
+        .fromTo('.cta__bloom', { opacity: 0, scale: .12 }, { opacity: .9, scale: 1, ease: 'sine.inOut', duration: .45 }, .35)
         .fromTo('.cta__veil', { opacity: 0 }, { opacity: .7, ease: 'none', duration: .5 }, .5);
       const tl = gsap.timeline({ scrollTrigger: { trigger: '.cta__content', start: 'top 80%' } });
       tl.from([...l1, ...l2], { yPercent: 115, duration: 1.2, ease: 'expo.out', stagger: .02 })

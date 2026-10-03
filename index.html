@@ -483,6 +483,13 @@
             <img src="assets/img/bg-scene3.jpg" width="1920" height="1072" loading="lazy"
                  alt="Syed Nabil Kabir at his desk at dusk, about to turn his laptop toward you">
           </picture>
+          <canvas class="scrub-seq" aria-hidden="true"
+                  data-frames="assets/frames/cta/{i}.webp" data-w="1280"
+                  data-frames-mobile="assets/frames/cta-m/{i}.webp" data-w-mobile="480"
+                  data-count="122"></canvas>
+          <!-- On wide screens: a display panel laid exactly over the laptop's lit screen (matching its colour);
+               it sits under the shading layers so it darkens exactly like the real screen -->
+          <div class="cta__display" aria-hidden="true"></div>
           <div class="shade shade--cta" aria-hidden="true"></div>
           <!-- Scroll-driven: camera pushes in, amber light blooms from the laptop, then a warm veil settles behind the text -->
           <div class="cta__bloom" aria-hidden="true"></div>

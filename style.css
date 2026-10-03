@@ -299,8 +299,57 @@ body {
   opacity: 0; transform: scale(.12);
   pointer-events: none;
 }
+/* With the clip, the light blooms from where the laptop screen ends up (just below centre) */
+.cta.has-video .media .cta__bloom {
+  top: 57%;
+  /* The clip's screen is now dark (matching the display), so the light spills AROUND it as a
+     warm halo with a clear centre, instead of washing over the screen */
+  background: radial-gradient(circle, rgba(242,179,91,0) 0%, rgba(242,179,91,0) 33%, rgba(242,179,91,.42) 41%, rgba(242,179,91,.16) 52%, rgba(242,179,91,0) 64%);
+}
 /* Warm dark veil that settles over the glow so the headline and buttons stay readable */
 .cta__veil { background: radial-gradient(90% 75% at 50% 62%, rgba(40,22,6,.45), rgba(7,9,12,.88)); opacity: 0; pointer-events: none; }
+/* ---------- Closing text shown ON the laptop screen (wide screens, clip loaded) ----------
+   script.js measures where the laptop's lit display lands in the viewport and sets
+   --sx/--sy/--sw/--sh, then adds .on-screen. Sizes use container units, so the text
+   scales with the laptop screen at any window size. */
+.cta__display { display: none; }
+.cta.on-screen .media .cta__display {
+  display: block; inset: auto;
+  left: var(--ux); top: var(--uy); width: var(--uw); height: var(--uh);
+  border-radius: 4px;
+  /* Matches the laptop's own screen in the clip: warm peach with a thin near-white top bar */
+  background:
+    linear-gradient(180deg, #fcfcf9 0, #fcfcf9 3.2%, rgba(0,0,0,.06) 3.2%, rgba(0,0,0,0) 3.6%),
+    linear-gradient(118deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 40%),
+    linear-gradient(180deg, #fee6c1 0%, #fee5c0 60%, #fdebce 100%);
+  box-shadow: 0 0 calc(var(--uw) * .12) calc(var(--uw) * .02) rgba(242,179,91,.22);
+  opacity: 0;
+}
+/* Camera zooms further into the laptop as the clip ends (--zp goes 0 to 1 with scroll) */
+.cta.on-screen .cta__media {
+  transform-origin: 0 0;
+  transform: translate(calc(var(--zx, 0px) * var(--zp, 0)), calc(var(--zy, 0px) * var(--zp, 0))) scale(calc(1 + (var(--z, 1) - 1) * var(--zp, 0)));
+}
+.cta.has-video.on-screen .cta__veil { background: radial-gradient(90% 75% at 50% 58%, rgba(36,20,6,.12), rgba(7,9,12,.72)); }
+.cta.on-screen .cta__content {
+  position: absolute; z-index: 2; margin: 0;
+  left: var(--sx); top: var(--sy); width: var(--sw); height: var(--sh);
+  container-type: size;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 3cqh 4cqw; text-align: center;
+}
+.cta.on-screen .cta__content .label { font-size: max(9px, 2.1cqw); color: #1d6a88; }
+.cta.on-screen .cta__title { color: #10161b; }
+.cta.on-screen .cta__title em { color: #b8651a; }
+.cta.on-screen .cta__title { margin-top: 2.4cqh; font-size: 9.1cqw; white-space: nowrap; }
+.cta.on-screen .cta__sub { margin-top: 3.8cqh; font-size: max(11px, 3cqw); max-width: 88%; }
+.cta.on-screen .cta__actions { margin-top: 5cqh; gap: 2cqw; }
+.cta.on-screen .cta__actions .btn { font-size: max(11px, 2.7cqw); min-height: 0; padding: .75em 1.35em; }
+.cta.on-screen .cta__meta { margin-top: 3.8cqh; gap: 3cqw; font-size: max(10px, 2cqw); }
+.cta.on-screen .cta__email, .cta.on-screen .cta__resume { min-height: 0; font-size: max(10px, 2cqw); }
+
+/* The clip ends on a bright laptop screen right behind the headline, so settle deeper there */
+.cta.has-video .cta__veil { background: radial-gradient(90% 75% at 50% 58%, rgba(36,20,6,.78), rgba(7,9,12,.97)); }
 .media video, .media .scrub-seq { opacity: 0; transition: opacity 1s; }
 .has-video .media video, .has-video .media .scrub-seq { opacity: 1; }
 .has-video .media .fallback, .has-video .media .field { opacity: 0; }
@@ -747,3 +796,14 @@ body {
   .hero__cue i::after { animation: none; }
   *, *::before, *::after { transition-duration: .01ms !important; }
 }
+
+/* On-screen layout sits on the light peach display: dark text, buttons tuned for a light background */
+.cta.on-screen .cta__sub { color: #3b3f44; }
+.cta.on-screen .btn--amber { background: #10161b; color: #fee6c1; box-shadow: none; }
+.cta.on-screen .btn--amber:hover { background: #24313b; }
+.cta.on-screen .btn--ghost { background: rgba(255,255,255,.35); border-color: rgba(16,22,27,.35); color: #10161b; backdrop-filter: none; }
+.cta.on-screen .btn--ghost:hover { border-color: #10161b; color: #10161b; background: rgba(255,255,255,.6); }
+.cta.on-screen .cta__email { color: #23282d; }
+.cta.on-screen .cta__email span { border-color: rgba(16,22,27,.45); }
+.cta.on-screen .cta__email:hover { color: #10161b; }
+.cta.on-screen .cta__resume { color: #23282d; }
