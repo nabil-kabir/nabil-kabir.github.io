@@ -598,12 +598,46 @@ body {
 .cap__tags { display: flex; flex-wrap: wrap; gap: .5rem; align-content: flex-start; padding-top: .6rem; }
 .cap__tags li { font-family: var(--f-mono); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; padding: .5rem .8rem; border: 1px solid var(--line-strong); border-radius: 999px; color: rgba(236,231,223,.85); }
 
-.certs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: clamp(4rem, 9vh, 6rem); }
-.cert { display: flex; gap: 1rem; align-items: flex-start; padding: 1.4rem; border-top: 1px solid var(--line-strong); }
-.cert__mark { color: var(--amber); line-height: 1.5; }
-.cert b { display: block; font-weight: 600; letter-spacing: -.01em; margin-bottom: .25rem; }
-.cert span span, .cert > span:last-child { font-size: .92rem; color: var(--mist); }
-.cert b { color: var(--bone); font-size: 1.02rem; }
+.certs { margin-top: clamp(5rem, 11vh, 8rem); }
+.certs__head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem 2rem; flex-wrap: wrap; margin-bottom: 1.8rem; }
+.certs__note { color: var(--mist); max-width: 46ch; }
+.certs__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.certs__grid:has(.cert__more[open]) { align-items: start; }
+.cert {
+  display: flex; flex-direction: column; gap: .55rem;
+  padding: 1.4rem 1.4rem 1.3rem;
+  border-radius: 14px;
+  background: rgba(18, 28, 37, .7);
+  border: 1px solid var(--line);
+  transition: border-color .4s var(--ease-out), transform .4s var(--ease-out);
+}
+.cert:hover { border-color: var(--line-strong); transform: translateY(-3px); }
+.cert--ai { border-color: rgba(242,179,91,.35); }
+.cert__meta { display: flex; justify-content: space-between; gap: .8rem; font-family: var(--f-mono); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--teal-glow); }
+.cert--ai .cert__meta { color: var(--amber); }
+.cert__meta span + span { color: var(--mist); }
+.cert__title { font-size: 1.08rem; font-weight: 600; letter-spacing: -.01em; line-height: 1.25; color: var(--bone); }
+.cert__info { font-size: .88rem; color: var(--mist); }
+.cert__link, .cert__more summary {
+  margin-top: auto; padding-top: .7rem;
+  font-family: var(--f-mono); font-size: .7rem; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--amber); cursor: pointer;
+}
+.cert__link:hover, .cert__more summary:hover { color: var(--bone); }
+.cert__actions { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem 1.2rem; margin-top: auto; padding-top: .7rem; }
+.cert__actions .cert__link { margin-top: 0; padding-top: 0; }
+.cert__link--pdf { color: var(--mist); }
+.cert__more li { display: flex; justify-content: space-between; align-items: baseline; gap: .8rem; }
+.cert__pdf { flex: none; font-family: var(--f-mono); font-size: .64rem; letter-spacing: .08em; color: var(--mist); padding: .15rem .45rem; border: 1px solid var(--line-strong); border-radius: 999px; }
+.cert__pdf:hover { color: var(--amber); border-color: var(--amber); }
+.cert__more { margin-top: auto; }
+.cert__more summary { list-style: none; }
+.cert__more summary::-webkit-details-marker { display: none; }
+.cert__more summary::after { content: " +"; }
+.cert__more[open] summary::after { content: " ×"; }
+.cert__more ul { display: grid; gap: .45rem; margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--line); }
+.cert__more a, .cert__course { font-size: .86rem; color: rgba(236,231,223,.8); }
+.cert__more a:hover { color: var(--amber); }
 
 /* ==========================================================================
    07 WORK
@@ -729,10 +763,11 @@ body {
   .stat:nth-child(n+4) { border-top: 1px solid var(--line); }
   .cap { grid-template-columns: auto 1fr; }
   .cap__tags { grid-column: 2; }
-  .certs { grid-template-columns: 1fr; }
+  .certs__grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 767px) {
+  .certs__grid { grid-template-columns: 1fr; }
   :root { --header-h: 64px; }
   .header__nav, .header .btn--pill { display: none; }
   .header__burger { display: block; }
