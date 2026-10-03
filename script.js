@@ -754,20 +754,36 @@
       size();
       new ResizeObserver(size).observe(cv);
 
-      // First frame unlocks the section; the rest load in order, a few at a time
-      const start = () => load(0).then((first) => {
-        if (!first.naturalWidth) { cv.remove(); return; }
-        section.classList.add('has-video');
-        cv.dataset.ready = '1';
-        cv.dispatchEvent(new Event('seqready'));
-        let next = 1;
-        const worker = () => (next < count ? load(next++).then(worker) : null);
-        for (let k = 0; k < 6; k++) worker();
-      });
-      // The hero loads straight away; later sections wait until they're about to scroll in
-      if (section.classList.contains('hero')) start();
+      // Coarse to fine: every 16th frame first, then the gaps in between, so wherever the
+      // visitor is in the clip a nearby frame is ready early instead of only the opening ones
+      const order = [0, count - 1];
+      for (let step = 16; step >= 1; step /= 2) {
+        for (let i = 0; i < count; i += step) if (!order.includes(i)) order.push(i);
+      }
+      // First frame unlocks the section; the rest load a few at a time
+      let started = false;
+      const start = () => {
+        if (started) return Promise.resolve();
+        started = true;
+        return load(0).then((first) => {
+          if (!first.naturalWidth) { cv.remove(); return; }
+          section.classList.add('has-video');
+          cv.dataset.ready = '1';
+          cv.dispatchEvent(new Event('seqready'));
+          let next = 1;
+          const worker = () => {
+            if (next >= order.length) return null;
+            return load(order[next++]).then(() => { ctrl.drawn = -1; return worker(); });
+          };
+          return Promise.all(Array.from({ length: 6 }, worker));
+        });
+      };
+      cv._start = start;
+      // The hero loads straight away; later sections start once the hero has finished,
+      // or earlier if the visitor is already scrolling towards them
+      if (section.classList.contains('hero')) cv._first = true;
       // refreshPriority -1: measured after the pins above it exist, so the distance is right
-      else ScrollTrigger.create({ trigger: section, start: 'top bottom+=150%', once: true, onEnter: start, refreshPriority: -1 });
+      else ScrollTrigger.create({ trigger: section, start: 'top bottom+=300%', once: true, onEnter: start, refreshPriority: -1 });
 
       gsap.ticker.add(() => {
         if (!cv.isConnected || !cv.dataset.ready) return;
@@ -791,6 +807,12 @@
         ctrl.drawn = key;
       });
     });
+
+    // Hero first, then each later clip in page order, in the background
+    const seqs = $$('.scrub-seq').filter((cv) => cv._start);
+    const hero = seqs.find((cv) => cv._first);
+    const rest = seqs.filter((cv) => cv !== hero);
+    rest.reduce((p, cv) => p.then(() => cv.isConnected && cv._start()), hero ? hero._start() : Promise.resolve());
   }
 
   const scrubOf = (sel) => { const v = $(sel + ' .scrub-seq, ' + sel + ' .scrub-video'); return v && v._scrub ? v._scrub : { set() {} }; };
