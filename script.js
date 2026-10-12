@@ -1177,6 +1177,12 @@
     gsap.from(['.voice__row', '.voice__full', '.voices__note'], { opacity: 0, y: 24, duration: 1, ease: 'expo.out', stagger: .12, delay: .2, scrollTrigger: st });
   }
 
+  // Opening or closing a <details> fold out changes the page height: re-measure so the
+  // pinned sections below (CTA) start in the right place
+  function initToggles() {
+    $$('details').forEach((d) => d.addEventListener('toggle', () => setTimeout(() => ScrollTrigger.refresh(), 50)));
+  }
+
   function initCTA(mm) {
     const scrub = scrubOf('.cta');
     const clamp01 = (x) => Math.min(1, Math.max(0, x));
@@ -1391,6 +1397,7 @@
     initCaps(mm);
     initWork();
     initVoices();
+    initToggles();
     initCTA(mm);
     initFooter();
     initGenericReveals();
