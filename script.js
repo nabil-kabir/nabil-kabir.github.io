@@ -1170,6 +1170,13 @@
     gsap.from('.work__note', { opacity: 0, y: 20, duration: 1, ease: 'expo.out', scrollTrigger: { trigger: '.work__note', start: 'top 90%' } });
   }
 
+  function initGlance() {
+    if (!$('.glance__card')) return;
+    const st = { trigger: '.glance__card', start: 'top 85%' };
+    gsap.from('.glance__card', { opacity: 0, y: 40, duration: 1.1, ease: 'expo.out', scrollTrigger: st });
+    gsap.from('.glance__grid > div', { opacity: 0, y: 16, duration: .8, ease: 'expo.out', stagger: .04, delay: .15, scrollTrigger: st });
+  }
+
   function initVoices() {
     if (!$('.voice')) return;
     const st = { trigger: '.voice', start: 'top 80%' };
@@ -1396,6 +1403,7 @@
     initStory();
     initCaps(mm);
     initWork();
+    initGlance();
     initVoices();
     initToggles();
     initCTA(mm);
