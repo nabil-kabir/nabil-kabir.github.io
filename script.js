@@ -232,10 +232,15 @@
       { scale: 1, duration: .8, ease: 'expo.out', stagger: .05 });
   }
 
+  // A case with data-shot shows that screenshot instead of a drawn mini chart
+  const caseVisual = (c) => c.dataset.shot
+    ? `<img src="${c.dataset.shot}" alt="" loading="lazy" decoding="async">`
+    : chartSVG(c.dataset.chart);
+
   function initCases() {
     const cases = $$('.case');
     cases.forEach((c) => {
-      $('.case__chart', c).innerHTML = chartSVG(c.dataset.chart);
+      if (!c.dataset.shot) $('.case__chart', c).innerHTML = chartSVG(c.dataset.chart);
       const row = $('.case__row', c);
       row.dataset.cursorLabel = 'View';
       row.addEventListener('click', () => {
@@ -260,7 +265,7 @@
     const show = (c) => {
       if (shown === c) return;
       shown = c;
-      if (current !== c) { inner.innerHTML = chartSVG(c.dataset.chart); drawLines(inner); current = c; }
+      if (current !== c) { inner.innerHTML = caseVisual(c); drawLines(inner); current = c; }
       gsap.to(preview, { opacity: 1, scale: 1, duration: .5, ease: 'expo.out', overwrite: 'auto' });
     };
     const hide = () => {

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inventory Risk Dashboard | Syed Nabil Kabir</title>
+  <meta name="description" content="A Power BI dashboard that finds stock about to become a loss and plans the markdown that saves the most, built on 104,884 real marketplace orders by Syed Nabil Kabir.">
+  <meta name="theme-color" content="#07090C">
+  <meta name="color-scheme" content="dark">
+  <link rel="canonical" href="https://nabil-kabir.github.io/projects/inventory-risk.html">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Which stock is about to become a loss? | Inventory Risk Dashboard">
+  <meta property="og:description" content="R$494K of stock at risk found in 104,884 real orders, and the markdown that saves the most. A Power BI case study by Syed Nabil Kabir.">
+  <meta property="og:url" content="https://nabil-kabir.github.io/projects/inventory-risk.html">
+  <meta property="og:image" content="https://nabil-kabir.github.io/assets/img/projects/inventory-risk/og-inventory-risk.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Which stock is about to become a loss? | Inventory Risk Dashboard">
+  <meta name="twitter:image" content="https://nabil-kabir.github.io/assets/img/projects/inventory-risk/og-inventory-risk.jpg">
+  <link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,800;1,300&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="preload" as="image" href="../assets/img/projects/inventory-risk/summary.webp" type="image/webp">
+  <link rel="stylesheet" href="../style.css">
+  <script src="inventory-risk.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="pp-bar">
+    <a class="pp-bar__logo" href="../" aria-label="Syed Nabil Kabir, home">Syed Nabil Kabir<span>.</span></a>
+    <a class="pp-bar__back" href="../#work">← All work</a>
+  </header>
+
+  <main id="main">
+    <section class="pp-hero container">
+      <p class="label">Case study  ·  Power BI  ·  2026</p>
+      <h1 class="title">Which stock is about to become a <em>loss?</em></h1>
+      <p class="pp-lede">An inventory risk dashboard built on 104,884 real orders from a Brazilian marketplace. It finds the stock that will pass 180 days before it sells, puts a price on that risk, and plans the markdown that saves the most.</p>
+      <dl class="kpis">
+        <div><dt>R$494K</dt><dd>of stock at risk, 45% of the shelf</dd></div>
+        <div><dt><em>R$197K</em></dt><dd>saved by a 30% markdown now</dd></div>
+        <div><dt>4,057</dt><dd>SKUs ranked for action</dd></div>
+      </dl>
+      <div class="ctas">
+        <a class="btn btn--amber" href="#planner">Try the planner <i>↓</i></a>
+        <a class="btn btn--ghost" href="https://github.com/nabil-kabir/inventory-risk-dashboard/releases/latest/download/Inventory-Risk-Dashboard.pbix">Download the dashboard <small class="btn__meta">.pbix · 10 MB</small></a>
+        <a class="btn btn--ghost" href="https://github.com/nabil-kabir/inventory-risk-dashboard" target="_blank" rel="noopener">See the code on GitHub</a>
+      </div>
+      <p class="fineprint" style="margin-top:1rem">The .pbix opens in the free Power BI Desktop, with all five pages and the data included.</p>
+    </section>
+
+    <section class="pp-tour container" aria-label="Dashboard tour">
+      <figure>
+        <div class="frame">
+          <div class="frame__bar"><i></i><i></i><i></i><span id="tour-title">Inventory Risk Dashboard  ·  Summary</span></div>
+          <a class="frame__screen" id="tour-link" href="../assets/img/projects/inventory-risk/summary.webp" target="_blank" rel="noopener" aria-label="Open this page full size">
+            <img class="is-on" src="../assets/img/projects/inventory-risk/summary.webp" alt="Summary page: stock on hand, value at risk, trend and top categories" width="1600" height="900">
+            <img src="../assets/img/projects/inventory-risk/aging.webp" alt="Aging page: waterfall by age, category heat map and SKU table" width="1600" height="900" loading="lazy">
+            <img src="../assets/img/projects/inventory-risk/liquidation.webp" alt="Liquidation planner: markdown sliders, projected loss and the ranked action list" width="1600" height="900" loading="lazy">
+            <img src="../assets/img/projects/inventory-risk/sellers.webp" alt="Seller and region view: bars, seller scatter chart and ranking" width="1600" height="900" loading="lazy">
+            <img src="../assets/img/projects/inventory-risk/about.webp" alt="About page: data, simulation method and how risk is measured" width="1600" height="900" loading="lazy">
+          </a>
+        </div>
+        <div class="pp-tabs" role="tablist" aria-label="Dashboard pages">
+          <button type="button" role="tab" aria-selected="true">Summary</button>
+          <button type="button" role="tab" aria-selected="false">Aging</button>
+          <button type="button" role="tab" aria-selected="false">Liquidation</button>
+          <button type="button" role="tab" aria-selected="false">Sellers</button>
+          <button type="button" role="tab" aria-selected="false">About</button>
+        </div>
+        <figcaption class="pp-caption" id="tour-caption" aria-live="polite">The problem in one screen: how much stock is at risk, how fast it is growing, and where it sits.</figcaption>
+      </figure>
+    </section>
+
+    <section class="pp-sec">
+      <div class="container pp-two">
+        <div><p class="label">The problem</p><h2 class="pp-h">Old stock is <em>quiet money.</em></h2></div>
+        <div class="pp-body">
+          <p>In retail, the stock that hurts is rarely the stock anyone is looking at. It sits in the long tail, ages month by month, and only shows up when it is written off.</p>
+          <p>At Daraz I protected $100K of aging inventory by finding it early and acting before it turned into loss. Company data stays private, so this project rebuilds the same thinking on public data, end to end, for anyone to open.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="pp-sec pp-sec--alt">
+      <div class="container">
+        <p class="label">The data</p>
+        <h2 class="pp-h">Real demand, <em>simulated stock.</em></h2>
+        <div class="pp-body" style="margin-top:1.4rem">
+          <p>Olist publishes real orders but no inventory, so the stock was rebuilt from the sales. Buyers reorder at a reorder point with a forecast bias, some sellers over order, sales use the oldest batch first, and batches still unsold after 270 days are cleared at a loss. Every step is seeded and documented, so the numbers are reproducible.</p>
+        </div>
+        <ol class="pipe">
+          <li><h3>Olist orders</h3><p>104,884 real order lines, January 2017 to July 2018, across 31,981 SKUs.</p></li>
+          <li><h3>Python simulation</h3><p>Purchase batches, first in, first out aging, reorder points and clearance, written to a star schema.</p></li>
+          <li><h3>Power BI model</h3><p>Four fact tables, five dimensions, 52 DAX measures and two what if parameters.</p></li>
+          <li><h3>Decisions</h3><p>Value at risk by SKU, seller and region, and a ranked markdown plan.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="pp-sec" id="planner">
+      <div class="container">
+        <p class="label">Try it</p>
+        <h2 class="pp-h">Wait, or mark <em>down?</em></h2>
+        <div class="planner-wrap">
+          <div class="pp-body">
+            <p>R$494K of stock will pass 180 days before it sells. Clear it later and most of that is lost. Mark it down now and some of it sells at a fair price.</p>
+            <p>Move the slider to find the markdown that saves the most. These numbers come from the same formula as the dashboard's DAX.</p>
+          </div>
+          <div class="planner" aria-live="polite">
+            <div class="planner__head">
+              <span class="label">Markdown on stock at risk</span>
+              <span class="planner__md"><span id="md">30%</span><small>off list price</small></span>
+            </div>
+            <input class="planner__range" id="range" type="range" min="0" max="60" step="5" value="30" aria-label="Markdown percentage">
+            <div class="planner__ticks" aria-hidden="true"><span>0%</span><span>15%</span><span>30%</span><span>45%</span><span>60%</span></div>
+            <div class="planner__bars">
+              <div>
+                <div class="planner__row"><span>Loss if we wait and clear later</span><b id="wait">R$369K</b></div>
+                <div class="planner__bar planner__bar--wait"><i></i></div>
+              </div>
+              <div>
+                <div class="planner__row"><span>Loss if we mark down now</span><b id="act">R$172K</b></div>
+                <div class="planner__bar planner__bar--act"><i id="actbar" style="width:47%"></i></div>
+              </div>
+            </div>
+            <div class="planner__saved">
+              <span class="planner__num" id="saved">R$197K</span>
+              <span class="planner__lbl" id="savedlbl">saved by acting now</span>
+            </div>
+            <p class="planner__note">Assumes each 10 points of markdown clears 15% of the stock at risk within 90 days; the rest is cleared later at the 25% historical recovery rate. <button type="button" id="best">Jump to the best markdown</button></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="pp-sec pp-sec--alt">
+      <div class="container pp-two">
+        <div><p class="label">The logic</p><h2 class="pp-h">Value at risk, <em>defined.</em></h2></div>
+        <div class="pp-body">
+          <p>Each SKU's last 90 days of sales set its pace. Units sell first in, first out at that pace, and a unit counts as at risk if it would be older than 180 days by the time it sells.</p>
+          <p>The planner tests every markdown from 0% to 60% for each SKU and keeps the one that recovers the most:</p>
+<pre class="code"><b>VAR</b> Options =
+    <b>ADDCOLUMNS</b> (
+        <b>ADDCOLUMNS</b> ( <b>ALL</b> ( Markdown[Markdown] ),
+            "@SellThrough", <b>MIN</b> ( 1, Response * Markdown[Markdown] / 0.1 ) ),
+        "@Recovered",
+            RiskAtList * [@SellThrough] * ( 1 - Markdown[Markdown] )
+                + RiskValue * ( 1 - [@SellThrough] ) * Recovery
+    )
+<b>VAR</b> Best = <b>TOPN</b> ( 1, Options, [@Recovered], <b>DESC</b> )
+<b>RETURN</b> <b>MAXX</b> ( Best, Markdown[Markdown] )   <u>// suggested markdown</u></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="pp-sec">
+      <div class="container pp-two">
+        <div><p class="label">What it shows</p><h2 class="pp-h">The <em>findings.</em></h2></div>
+        <ul class="finds">
+          <li><strong>45%</strong><span>of stock value will pass 180 days before it sells at today's pace. 18.6% already has.</span></li>
+          <li><strong>R$267K</strong><span>was already lost to write offs in the last 12 months. Waiting has a price.</span></li>
+          <li><strong>27%</strong><span>of the risk sits with just 20 of 1,092 sellers: a short call list.</span></li>
+          <li><strong>40%</strong><span>is the single best markdown. A 30% markdown alone saves R$197K.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="pp-end container">
+      <p class="label">Built with</p>
+      <ul class="tags"><li>Python</li><li>pandas</li><li>Power BI</li><li>DAX</li><li>TMDL</li><li>Star schema</li><li>What if parameters</li></ul>
+      <div class="ctas">
+        <a class="btn btn--amber" href="https://github.com/nabil-kabir/inventory-risk-dashboard/releases/latest/download/Inventory-Risk-Dashboard.pbix">Download the dashboard <i>↓</i></a>
+        <a class="btn btn--ghost" href="https://github.com/nabil-kabir/inventory-risk-dashboard" target="_blank" rel="noopener">See the code on GitHub</a>
+        <a class="btn btn--ghost" href="../#work">Back to all work</a>
+      </div>
+      <p class="fineprint" style="margin-top:1.6rem">Real demand from the public Olist dataset, simulated inventory. No company data used.</p>
+    </section>
+  </main>
+
+  <footer class="pp-foot">© 2026 Syed Nabil Kabir</footer>
+</body>
+</html>
