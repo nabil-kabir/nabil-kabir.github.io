@@ -1170,6 +1170,13 @@
     gsap.from('.work__note', { opacity: 0, y: 20, duration: 1, ease: 'expo.out', scrollTrigger: { trigger: '.work__note', start: 'top 90%' } });
   }
 
+  function initVoices() {
+    if (!$('.voice')) return;
+    const st = { trigger: '.voice', start: 'top 80%' };
+    gsap.from('.voice__quote p', { opacity: 0, y: 40, duration: 1.2, ease: 'expo.out', scrollTrigger: st });
+    gsap.from(['.voice__row', '.voice__full', '.voices__note'], { opacity: 0, y: 24, duration: 1, ease: 'expo.out', stagger: .12, delay: .2, scrollTrigger: st });
+  }
+
   function initCTA(mm) {
     const scrub = scrubOf('.cta');
     const clamp01 = (x) => Math.min(1, Math.max(0, x));
@@ -1383,6 +1390,7 @@
     initStory();
     initCaps(mm);
     initWork();
+    initVoices();
     initCTA(mm);
     initFooter();
     initGenericReveals();
