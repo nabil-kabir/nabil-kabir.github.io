@@ -329,6 +329,8 @@
       const mobile = w < 768;
       if (this.mode === 'bars') {
         this.setupBars();
+      } else if (this.mode === 'trend') {
+        this.setupTrend();
       } else if (this.mode === 'motes') {
         const n = mobile ? 50 : 120;
         // Where the trend line forms, chosen by screen shape so it stays clear of faces:
@@ -371,6 +373,7 @@
       ctx.clearRect(0, 0, this.w, this.h);
       if (this.mode === 'motes') this.drawMotes();
       else if (this.mode === 'bars') this.drawBars();
+      else if (this.mode === 'trend') this.drawTrend();
       else if (this.mode === 'charts') this.drawCharts();
       else this.drawCorridor();
     }
@@ -508,6 +511,116 @@
         const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 70);
         g.addColorStop(0, rgba(AMBER, .55 * a)); g.addColorStop(1, rgba(AMBER, 0));
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, 70, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    // Hero: particles settle into a dot matrix area chart in the open space left of the
+    // coded dashboard, above "to decisions.". Measured from layout boxes (not transforms),
+    // so it fits any screen; desktop with the intro clip only.
+    trendRegion() {
+      const hero = this.c.closest('.hero');
+      const dash = hero && $('.hero__dash', hero);
+      const content = hero && $('.hero__content', hero);
+      const signal = hero && $('.hero__line--signal', hero);
+      if (!dash || !content || !signal || this.w < 768 || !dash.offsetWidth) return null;
+      // "to decisions." grows 12% from its bottom left and rises 10% while the dashboard builds
+      const signalTop = content.offsetTop + signal.offsetTop - signal.offsetHeight * .22;
+      const r = {
+        x0: content.offsetLeft + 6,
+        x1: dash.offsetLeft - Math.max(36, this.w * .035),
+        y0: dash.offsetTop + dash.offsetHeight * .12,
+        y1: Math.min(dash.offsetTop + dash.offsetHeight, signalTop - 24),
+      };
+      r.x1 = Math.min(r.x1, r.x0 + (r.y1 - r.y0) * 2.2); // keep the curve's shape on very wide screens
+      return r.x1 - r.x0 >= 200 && r.y1 - r.y0 >= 120 ? r : null;
+    }
+
+    setupTrend() {
+      const { h } = this;
+      const reg = this.region = this.trendRegion();
+      this.pts = [];
+      this.curve = [];
+      if (!reg) return;
+      const W = reg.x1 - reg.x0, H = reg.y1 - reg.y0;
+      const val = (u) => Math.min(1, Math.max(.08, .16 + .74 * Math.pow(u, 1.35) + .05 * Math.sin(u * 9.5) * (1 - u * .4)));
+      const sp = Math.min(9, Math.max(6, W / 60));
+      const cols = Math.floor(W / sp);
+      const targets = [];
+      for (let c = 0; c <= cols; c++) {
+        const u = c / cols;
+        const x = reg.x0 + u * W;
+        const top = reg.y1 - H * val(u);
+        this.curve.push([x, top]);
+        const rows = Math.max(1, Math.floor((reg.y1 - top) / sp));
+        for (let r = 0; r < rows; r++) {
+          // the area thins toward the baseline, so it reads as a soft glow under the line
+          const depth = (r + 1) / rows;
+          if (Math.random() > .22 + .78 * depth * depth) continue;
+          targets.push({ tx: x, ty: reg.y1 - (r + .5) * sp, hot: u > .86, d: u * .3 + depth * .1 + Math.random() * .04 });
+        }
+      }
+      // the line itself: a dense run of brighter particles drawn left to right
+      const n = Math.round(W / 3);
+      for (let i = 0; i <= n; i++) {
+        const u = i / n;
+        targets.push({ tx: reg.x0 + u * W, ty: reg.y1 - H * val(u), hot: u > .86, d: u * .3 + .08, line: true });
+      }
+      for (let i = 0; i < 40; i++) targets.push({ tx: null });
+      // loose particles drift only over the left side, never across the dashboard
+      this.band = reg.x1 + 60;
+      this.pts = targets.map((t) => ({
+        ...t,
+        x: Math.random() * this.band, y: Math.random() * h,
+        vx: (Math.random() - .5) * .3, vy: (Math.random() - .5) * .3 - .1,
+        r: t.line ? 1.4 + Math.random() * .6 : .8 + Math.random() * 1.1, ph: Math.random() * Math.PI * 2,
+        amber: t.hot || (!t.line && Math.random() < .08),
+      }));
+    }
+
+    drawTrend() {
+      const { ctx, h, pts, region: reg, curve } = this;
+      if (!reg) return;
+      const k = smooth(.05, .85, this.progress);
+      ctx.globalCompositeOperation = 'lighter';
+      if (k > .3) {
+        const a = (k - .3) / .7;
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = rgba(TEAL, .07 * a);
+        ctx.beginPath();
+        [.25, .5, .75].forEach((f) => { const y = reg.y0 + (reg.y1 - reg.y0) * f; ctx.moveTo(reg.x0, y); ctx.lineTo(reg.x1, y); });
+        ctx.stroke();
+        ctx.strokeStyle = rgba(TEAL, .4 * a);
+        ctx.beginPath(); ctx.moveTo(reg.x0 - 6, reg.y1 + 5); ctx.lineTo(reg.x1 + 6, reg.y1 + 5); ctx.stroke();
+      }
+      const drawn = Math.floor(curve.length * smooth(.25, .95, k));
+      if (drawn > 1) {
+        ctx.beginPath();
+        curve.slice(0, drawn).forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+        ctx.strokeStyle = rgba(TEAL, .35 * Math.min(1, (k - .25) / .4));
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+      pts.forEach((p) => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.y < -10) p.y = h + 10; else if (p.y > h + 10) p.y = -10;
+        if (p.x < -10) p.x = this.band; else if (p.x > this.band) p.x = -10;
+        const kp = p.tx === null ? 0 : smooth(p.d, p.d + .5, k);
+        const x = kp ? p.x + (p.tx - p.x) * kp : p.x;
+        const y = kp ? p.y + (p.ty - p.y) * kp : p.y;
+        const tw = .55 + Math.sin(this.t * 2 + p.ph) * .35;
+        const col = p.amber ? AMBER : TEAL;
+        const s = p.r * (1 + kp * (p.line ? .6 : .3));
+        ctx.fillStyle = rgba(col, (.4 + (p.line ? .55 : .4) * kp) * (kp > .9 ? 1 : tw));
+        ctx.fillRect(x - s / 2, y - s / 2, s, s);
+      });
+      if (k > .7) {
+        const a = (k - .7) / .3;
+        const [cx, cy] = curve[curve.length - 1];
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 70);
+        g.addColorStop(0, rgba(AMBER, .55 * a)); g.addColorStop(1, rgba(AMBER, 0));
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, 70, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = rgba(AMBER, a); ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, Math.PI * 2); ctx.fill();
       }
       ctx.globalCompositeOperation = 'source-over';
     }
@@ -654,7 +767,7 @@
     if (bars) bars.closest('section').classList.add('has-chart');
     $$('canvas.field').forEach((c) => fields.set(c.dataset.mode, new Field(c)));
     // Chart areas measured from text need re-measuring after fonts load or layout refreshes
-    ScrollTrigger.addEventListener('refresh', () => fields.forEach((f) => { if (f.mode === 'bars') f.resize(); }));
+    ScrollTrigger.addEventListener('refresh', () => fields.forEach((f) => { if (f.mode === 'bars' || f.mode === 'trend') f.resize(); }));
     let last = performance.now();
     const loop = (now) => {
       const dt = Math.min(64, now - last); last = now;
@@ -959,6 +1072,7 @@
         scrub.set(clamp01(p / VIDEO_END));
         hero.style.setProperty('--reveal', smooth(FADE_FROM, FADE_TO, p).toFixed(3));
         dashTl.progress(clamp01((p - DASH_FROM) / (DASH_TO - DASH_FROM)));
+        setField('trend', clamp01((p - DASH_FROM) / (DASH_TO - DASH_FROM)));
       } else {
         setField('motes', p);
       }
