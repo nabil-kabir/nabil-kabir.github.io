@@ -154,6 +154,10 @@ tr.addsub td{height:44px}
 .install .btn{padding:8px 14px;font-size:13px}
 .datarow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .datarow .chip{font-size:12.5px;padding:6px 12px}
+.steps{margin:0;padding:0;list-style:none;display:grid;gap:12px;counter-reset:st}
+.steps li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;align-items:start;font-size:14.5px;color:var(--chalk);counter-increment:st}
+.steps li::before{content:counter(st);width:28px;height:28px;border-radius:50%;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.steps li span{color:var(--muted);display:block;font-size:13px;margin-top:2px}
 .ver{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.06em}
 
 /* edit */
@@ -228,6 +232,7 @@ tr.addsub td{height:44px}
     <nav class="nav" aria-label="Month">
       <button id="prev" aria-label="Previous month"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3 5 8l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button class="today-btn" id="todayBtn">This month</button>
+      <button class="today-btn" id="installNav" hidden>Install app</button>
       <button id="next" aria-label="Next month"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="m6 3 5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </nav>
   </header>
@@ -276,6 +281,7 @@ tr.addsub td{height:44px}
     <div class="sheet">
       <h4 id="dlgTitle">Add exercise</h4>
       <p id="dlgText"></p>
+      <ol class="steps" id="dlgSteps" hidden></ol>
       <div id="dlgField" hidden style="display:grid;gap:10px">
         <label class="eyebrow" for="dlgInput">Exercise name</label>
         <input id="dlgInput" type="text" maxlength="40" placeholder="Cable fly" autocomplete="off">
@@ -482,6 +488,8 @@ function openSheet(cfg){
   $('dlgTitle').textContent=cfg.title;
   $('dlgText').innerHTML=cfg.text;
   $('dlgField').hidden=!cfg.input;
+  $('dlgSteps').hidden=!cfg.steps; $('dlgSteps').innerHTML=cfg.steps||'';
+  $('dlgCancel').textContent=cfg.cancel||'Cancel'; $('dlgCancel').hidden=cfg.cancel===false;
   $('dlgErr').hidden=true;
   const ok=$('dlgOk'); ok.textContent=cfg.ok; ok.className='btn '+(cfg.danger?'danger':'go');
   $('dlg').hidden=false;
@@ -510,6 +518,7 @@ function askRestore(data,fname){
 }
 function confirmSheet(){
   if(!pending)return;
+  if(pending.mode==='install'){const dp=deferredPrompt;closeSheet();if(dp){dp.prompt();dp.userChoice.then(r=>{deferredPrompt=null;if(r&&r.outcome==='accepted')toast('Installing Lock-In');}).catch(()=>{});}return;}
   if(pending.mode==='restore'){applyData(pending.data);closeSheet();render();save();toast('Backup restored');return;}
   if(pending.mode==='removeHabit'){
     const h=state.habits.find(x=>x.id===pending.hid);
@@ -542,7 +551,7 @@ $('dlgInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefaul
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('dlg').hidden)closeSheet();});
 
 /* persistence: on this device, versioned so updates never wipe data */
-const APP_VERSION='1.0.0';
+const APP_VERSION='1.0.1';
 const SCHEMA=1;
 const LS='lockin-data';
 const LEGACY=['lockin-ledger-v1'];
@@ -599,22 +608,35 @@ $('restoreFile').addEventListener('change',e=>{
   r.readAsText(f);
 });
 
-/* install */
+/* install: Android gets the browser's prompt, iPhone gets Share-sheet steps (Apple allows no install button) */
 let deferredPrompt=null;
+const UA=navigator.userAgent;
 const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
-const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const isIOS=/iphone|ipad|ipod/i.test(UA)||(/Macintosh/.test(UA)&&navigator.maxTouchPoints>1);
+const inApp=/Instagram|FBAN|FBAV|FB_IAB|Messenger|Line\/|TikTok|Snapchat|LinkedInApp|Twitter/i.test(UA);
+const iosOther=isIOS&&/CriOS|FxiOS|EdgiOS/.test(UA);
 function dismissed(){try{return localStorage.getItem('lockin-install-dismissed')==='1';}catch(e){return false;}}
-function showInstall(kind){
-  if(standalone()||dismissed())return;
-  $('installText').innerHTML=kind==='ios'?'<b>Install Lock-In.</b> Tap Share, then Add to Home Screen.':'<b>Install Lock-In</b> for a full-screen app that works offline.';
-  $('installGo').hidden=kind==='ios';
+function installGuide(){
+  if(inApp) return {title:'Open in your browser first',text:'You opened Lock-In inside another app, and in-app browsers can\'t install apps.',steps:`<li><div>Tap the <b>⋯</b> menu in this app's browser.</div></li><li><div>Choose <b>Open in ${isIOS?'Safari':'Chrome'}</b> or <b>Open in external browser</b>.</div></li><li><div>Then tap <b>Install app</b> again.</div></li>`,ok:'Got it',cancel:false};
+  if(isIOS) return {title:'Add Lock-In to your Home Screen',text:'iPhones install web apps from the Share menu.'+(iosOther?' This works in Safari, Chrome and Edge on iOS 16.4 or later.':''),steps:'<li><div>Tap the <b>⋯</b> button at the bottom right.<span>On older iPhones, tap the Share button (a square with an arrow) instead.</span></div></li><li><div>Tap <b>Share</b>, then scroll down and tap <b>Add to Home Screen</b>.<span>Not listed? Tap View More at the end of the row.</span></div></li><li><div>Keep <b>Open as Web App</b> switched on, then tap <b>Add</b>.</div></li>',ok:'Got it',cancel:false};
+  if(deferredPrompt) return {title:'Install Lock-In',text:'Get a full-screen app with its own icon that works offline.',ok:'Install',cancel:'Not now'};
+  return {title:'Install Lock-In',text:'Your browser can install this from its menu.',steps:'<li><div>Open the browser menu <b>⋮</b>.</div></li><li><div>Tap <b>Install app</b> or <b>Add to Home screen</b>.</div></li>',ok:'Got it',cancel:false};
+}
+function openInstall(){const g=installGuide();openSheet(Object.assign({mode:'install'},g));}
+function refreshInstallUI(){
+  const show=!standalone();
+  $('installNav').hidden=!show;
+  if(!show||dismissed()){ $('install').hidden=true; return; }
+  $('installText').innerHTML=inApp?'<b>Open in your browser</b> to install Lock-In.':isIOS?'<b>Install Lock-In</b> on your Home Screen. It takes three taps.':'<b>Install Lock-In</b> for a full-screen app that works offline.';
+  $('installGo').textContent=(isIOS||inApp||!deferredPrompt)?'Show me how':'Install';
   $('install').hidden=false;
 }
-addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;showInstall('android');});
-if(isIOS&&!standalone())showInstall('ios');
-$('installGo').addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();const r=await deferredPrompt.userChoice.catch(()=>null);deferredPrompt=null;$('install').hidden=true;if(r&&r.outcome==='accepted')toast('Installing Lock-In');});
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;refreshInstallUI();});
+refreshInstallUI();
+$('installNav').addEventListener('click',openInstall);
+$('installGo').addEventListener('click',()=>{ if(deferredPrompt&&!isIOS&&!inApp){pending={mode:'install'};confirmSheet();} else openInstall(); });
 $('installNo').addEventListener('click',()=>{$('install').hidden=true;try{localStorage.setItem('lockin-install-dismissed','1');}catch(e){}});
-addEventListener('appinstalled',()=>{$('install').hidden=true;});
+addEventListener('appinstalled',()=>{$('install').hidden=true;$('installNav').hidden=true;});
 
 /* updates: check on every open, offer a one-tap refresh */
 if('serviceWorker' in navigator){
