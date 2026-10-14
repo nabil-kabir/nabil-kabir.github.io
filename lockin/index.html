@@ -119,6 +119,11 @@ tr.sub .editrow{padding-left:36px;grid-template-columns:minmax(0,1fr)}
 .mini{width:24px;height:24px;flex:none;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);transition:background .2s,color .2s,border-color .2s}
 .mini:hover{color:var(--w4);border-color:var(--w4);background:color-mix(in srgb,var(--w4) 10%,transparent)}
 tr.addsub td{height:44px}
+tr.addhabit td{height:52px;border-top:1px solid var(--line)}
+.addex.top{margin-left:0;color:var(--chalk);font-size:14px;white-space:nowrap}
+.addex{white-space:nowrap;text-align:left}
+.enddot{position:absolute;width:11px;height:11px;border-radius:50%;background:var(--chalk);border:3px solid var(--ink);transform:translate(-50%,-50%);box-sizing:content-box}
+.addex.top .mini{width:24px;height:24px}
 .addex{display:inline-flex;align-items:center;gap:9px;margin-left:36px;font-size:13px;font-weight:500;color:var(--muted);padding:5px 12px 5px 6px;border-radius:999px;transition:color .2s,background .2s}
 .addex:hover{color:var(--chalk);background:var(--raised)}
 .addex .mini{width:22px;height:22px;color:var(--chalk);border-color:var(--muted)}
@@ -262,7 +267,6 @@ tr.addsub td{height:44px}
       <button class="chip" id="editBtn" aria-pressed="false">Edit habits</button>
     </div>
     <div class="scroller" id="scroller"><table class="grid" id="grid"></table></div>
-    <div class="addrow" id="addRow" hidden><button class="chip" id="addBtn">+ Add habit</button></div>
   </section>
 
   <section class="lower">
@@ -283,9 +287,13 @@ tr.addsub td{height:44px}
       <p id="dlgText"></p>
       <ol class="steps" id="dlgSteps" hidden></ol>
       <div id="dlgField" hidden style="display:grid;gap:10px">
-        <label class="eyebrow" for="dlgInput">Exercise name</label>
+        <label class="eyebrow" for="dlgInput" id="dlgLabel">Exercise name</label>
         <input id="dlgInput" type="text" maxlength="40" placeholder="Cable fly" autocomplete="off">
-        <span class="err" id="dlgErr" hidden>Enter an exercise name.</span>
+        <span class="err" id="dlgErr" hidden>Enter a name.</span>
+      </div>
+      <div id="dlgGoalWrap" hidden style="display:grid;gap:10px">
+        <label class="eyebrow" for="dlgGoal">Goal · days per month</label>
+        <input id="dlgGoal" type="number" min="0" max="31" inputmode="numeric" value="12">
       </div>
       <div class="actions">
         <button class="btn" id="dlgCancel">Cancel</button>
@@ -320,7 +328,8 @@ const DEFAULT_SUBS={
  h2:['Deadlift','Pull-ups','Barbell row','Lat pulldown','Biceps curl'],
  h3:['Back squat','Romanian deadlift','Leg press','Walking lunges','Calf raises']
 };
-function withSubs(h){if(DEFAULT_SUBS[h.id]&&!Array.isArray(h.subs))h.subs=DEFAULT_SUBS[h.id].map((n,j)=>({id:h.id+'x'+(j+1),name:n}));return h;}
+function withSubs(h){if(!Array.isArray(h.subs))h.subs=DEFAULT_SUBS[h.id]?DEFAULT_SUBS[h.id].map((n,j)=>({id:h.id+'x'+(j+1),name:n})):[];return h;}
+const term=h=>/day|workout|gym|lift|train/i.test(h.name)?'exercise':'item';
 DEFAULT_HABITS.forEach(withSubs);
 const OPEN_KEY='lockin-open-v1';
 let open={h1:true};
@@ -392,13 +401,13 @@ function renderGrid(c){
   h+='</tr></thead><tbody>';
   H.forEach((hb,i)=>{
     const k=(monthData()[hb.id]||[]).length;
-    const hasList=Array.isArray(hb.subs);
-    const subs=hasList?hb.subs:[];
+    const hasList=true;
+    const subs=hb.subs||(hb.subs=[]);
     const isOpen=hasList&&!!open[hb.id];
     const tog=hasList?`<button class="tog" data-tog="${hb.id}" aria-expanded="${isOpen}" aria-controls="subs_${hb.id}" aria-label="${isOpen?'Collapse':'Expand'} ${esc(hb.name)} exercises"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="m4.5 2.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`:'<span class="tog-sp"></span>';
     h+='<tr><td class="hcol">';
     if(editing) h+=`<div class="editrow"><input id="n_${hb.id}" data-f="name" data-id="${hb.id}" value="${esc(hb.name)}" aria-label="Habit name"><input id="g_${hb.id}" data-f="goal" data-id="${hb.id}" type="number" min="0" max="31" value="${hb.goal}" aria-label="Goal days"><button class="del" data-del="${hb.id}" aria-label="Remove ${esc(hb.name)}"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>`;
-    else h+=`<div class="hname"><span class="hlead">${tog}<span>${esc(hb.name)}</span>${hasList&&!isOpen?`<span class="count">${subs.length}</span>`:''}</span><em class="num">${k}/${hb.goal}</em></div>`;
+    else h+=`<div class="hname"><span class="hlead">${tog}<span>${esc(hb.name)}</span>${subs.length&&!isOpen?`<span class="count">${subs.length}</span>`:''}</span><em class="num">${k}/${hb.goal}</em></div>`;
     h+='</td>';
     const row=(id,label)=>{let r='';for(let d=1;d<=n;d++){
       const on=has(id,d), fut=c.ld<d;
@@ -412,14 +421,14 @@ function renderGrid(c){
       h+=`<tr class="sub${isOpen&&justOpened===hb.id?' open':''}" data-of="${hb.id}" ${isOpen?'':'hidden'}><td class="hcol">${lab}</td>${row(s.id,hb.name+' · '+s.name)}</tr>`;
     });
     if(hasList&&!editing){
-      h+=`<tr class="sub addsub${isOpen&&justOpened===hb.id?' open':''}" ${isOpen?'':'hidden'}><td class="hcol"><button class="addex" data-add="${hb.id}"><span class="mini" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5h6M5 2v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>Add<span class="long">&nbsp;exercise</span></button></td><td colspan="${n}"></td></tr>`;
+      h+=`<tr class="sub addsub${isOpen&&justOpened===hb.id?' open':''}" ${isOpen?'':'hidden'}><td class="hcol"><button class="addex" data-add="${hb.id}"><span class="mini" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5h6M5 2v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>Add<span class="long">&nbsp;${term(hb)}</span></button></td><td colspan="${n}"></td></tr>`;
     }
   });
+  h+=`<tr class="addhabit"><td class="hcol"><button class="addex top" data-addhabit="1"><span class="mini" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5h6M5 2v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>Add habit</button></td><td colspan="${n}"></td></tr>`;
   h+='</tbody><tfoot><tr><td class="hcol">Daily %</td>';
   c.daily.forEach(x=>{const show=x.d<=c.ld;h+=`<td class="${x.p>=.7&&show?'hi':''}${(x.d-1)%7===0&&x.d>1?' wkstart':''}">${show?Math.round(x.p*100):'·'}</td>`;});
   h+='</tr></tfoot>';
   $('grid').innerHTML=h;
-  $('addRow').hidden=!editing;
   if(scrolledTo!==key()){scrolledTo=key();const sc=$('scroller');const t=Math.max(0,(isCur()?now.getDate():1)-1);requestAnimationFrame(()=>{const el=sc.querySelector(`.tick[data-d="${Math.max(1,t-2)}"]`);if(el&&sc.scrollWidth>sc.clientWidth)sc.scrollLeft=Math.max(0,el.closest('td').offsetLeft-200);});}
 }
 
@@ -436,7 +445,7 @@ function renderChart(c){
     const L=P[P.length-1];dot=`<circle cx="${L[0]}" cy="${L[1]}" r="5" fill="var(--chalk)" stroke="var(--ink)" stroke-width="3" vector-effect="non-scaling-stroke"/>`;
   }
   const svg=`<svg viewBox="0 0 1000 200" preserveAspectRatio="none" aria-label="Daily completion trend"><defs><linearGradient id="ar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EFEBE3" stop-opacity=".16"/><stop offset="1" stop-color="#EFEBE3" stop-opacity="0"/></linearGradient></defs>${grid}${pts.length?`<path d="${area}" fill="url(#ar)"/><path d="${line}" fill="none" stroke="var(--chalk)" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`:''}${bands}</svg>`;
-  const dotLayer=pts.length?`<svg viewBox="0 0 1000 200" preserveAspectRatio="none" style="overflow:visible">${dot}</svg>`:'';
+  const lp=pts.length?pts[pts.length-1]:null; const dotLayer=lp?`<i class="enddot" style="left:${(X(lp.d)/10).toFixed(2)}%;top:${(100-lp.p*100).toFixed(2)}%"></i>`:'';
   let xl='';[1,8,15,22,29].filter(d=>d<=n).forEach(d=>xl+=`<span style="left:${(d-1)/(n-1)*100}%">${d}</span>`);
   const empty=pts.length?'':`<div style="position:absolute;inset:0;display:grid;place-items:center;color:var(--faint);font-size:13px">Your trend appears after your first tick</div>`;
   $('chart').innerHTML=`<span class="ylab" style="top:8px">100%</span><span class="ylab" style="top:calc(8px + (100% - 34px)/2)">50%</span><span class="ylab" style="top:calc(100% - 26px)">0</span><div class="plot">${svg}${dotLayer}${empty}</div><div class="xlabs">${xl}</div>`;
@@ -455,6 +464,8 @@ $('grid').addEventListener('click',e=>{
   if(del){askRemoveHabit(del.dataset.del);return;}
   const rm=e.target.closest('[data-rm]');
   if(rm){askRemove(rm.dataset.of,rm.dataset.rm,rm);return;}
+  const ah=e.target.closest('[data-addhabit]');
+  if(ah){askAddHabit(ah);return;}
   const ad=e.target.closest('[data-add]');
   if(ad){askAdd(ad.dataset.add,ad);return;}
   const tg=e.target.closest('[data-tog]');
@@ -475,7 +486,6 @@ $('grid').addEventListener('change',e=>{
   render(); save();
 });
 $('editBtn').addEventListener('click',()=>{editing=!editing;$('editBtn').setAttribute('aria-pressed',editing);$('editBtn').textContent=editing?'Done editing':'Edit habits';render();});
-$('addBtn').addEventListener('click',()=>{const id='h'+Date.now().toString(36);state.habits.push({id,name:'New habit',goal:12});render();save();const el=$('n_'+id);if(el){el.focus();el.select();}});
 $('prev').addEventListener('click',()=>{view.m--;if(view.m<0){view.m=11;view.y--;}render();});
 $('next').addEventListener('click',()=>{view.m++;if(view.m>11){view.m=0;view.y++;}render();});
 $('todayBtn').addEventListener('click',()=>{view={y:now.getFullYear(),m:now.getMonth()};render();});
@@ -488,6 +498,8 @@ function openSheet(cfg){
   $('dlgTitle').textContent=cfg.title;
   $('dlgText').innerHTML=cfg.text;
   $('dlgField').hidden=!cfg.input;
+  $('dlgGoalWrap').hidden=!cfg.goal; $('dlgGoal').value='12';
+  $('dlgLabel').textContent=cfg.label||'Name'; $('dlgInput').placeholder=cfg.placeholder||'';
   $('dlgSteps').hidden=!cfg.steps; $('dlgSteps').innerHTML=cfg.steps||'';
   $('dlgCancel').textContent=cfg.cancel||'Cancel'; $('dlgCancel').hidden=cfg.cancel===false;
   $('dlgErr').hidden=true;
@@ -497,19 +509,22 @@ function openSheet(cfg){
 }
 function closeSheet(){$('dlg').hidden=true;pending=null;if(lastFocus&&document.body.contains(lastFocus))lastFocus.focus();}
 function askAdd(hid,from){
-  const h=state.habits.find(x=>x.id===hid); if(!h)return;
-  openSheet({mode:'add',hid,from,input:true,title:'Add exercise',text:`New exercise for <b>${esc(h.name)}</b>. It gets its own tick row.`,ok:'Add exercise'});
+  const h=state.habits.find(x=>x.id===hid); if(!h)return; const t=term(h);
+  openSheet({mode:'add',hid,from,input:true,label:t==='exercise'?'Exercise name':'Item name',placeholder:t==='exercise'?'Cable fly':'Morning walk',title:'Add '+t,text:`New ${t} under <b>${esc(h.name)}</b>. It gets its own tick row, and ticking it also ticks ${esc(h.name)}.`,ok:'Add '+t});
+}
+function askAddHabit(from){
+  openSheet({mode:'addHabit',from,input:true,goal:true,label:'Habit name',placeholder:'Meditation',title:'Add habit',text:'A new row to tick each day. You can add items under it later with its arrow.',ok:'Add habit'});
 }
 function askRemove(hid,sid,from){
   const h=state.habits.find(x=>x.id===hid); const s=h&&(h.subs||[]).find(x=>x.id===sid); if(!s)return;
   let days=0; Object.values(state.months).forEach(m=>{days+=(m[sid]||[]).length;});
   const hist=days?` Its <b>${days} logged ${days===1?'day':'days'}</b> will be cleared. ${esc(h.name)} ticks stay as they are.`:` It has no logged days yet.`;
-  openSheet({mode:'remove',hid,sid,from:null,title:'Remove exercise?',text:`Remove <b>${esc(s.name)}</b> from ${esc(h.name)}.${hist}`,ok:'Remove',danger:true});
+  openSheet({mode:'remove',hid,sid,from:null,title:'Remove '+term(h)+'?',text:`Remove <b>${esc(s.name)}</b> from ${esc(h.name)}.${hist}`,ok:'Remove',danger:true});
 }
 function askRemoveHabit(hid){
   const h=state.habits.find(x=>x.id===hid); if(!h)return;
   let days=0; Object.values(state.months).forEach(m=>{days+=(m[hid]||[]).length;});
-  const extra=(h.subs&&h.subs.length)?` Its ${h.subs.length} exercises go with it.`:'';
+  const extra=(h.subs&&h.subs.length)?` Its ${h.subs.length} ${term(h)}${h.subs.length===1?'':'s'} go with it.`:'';
   openSheet({mode:'removeHabit',hid,title:'Remove habit?',text:`Remove <b>${esc(h.name)}</b> and its <b>${days} logged ${days===1?'day':'days'}</b>.${extra} This can't be undone unless you have a backup.`,ok:'Remove habit',danger:true});
 }
 function askRestore(data,fname){
@@ -519,6 +534,17 @@ function askRestore(data,fname){
 function confirmSheet(){
   if(!pending)return;
   if(pending.mode==='install'){const dp=deferredPrompt;closeSheet();if(dp){dp.prompt();dp.userChoice.then(r=>{deferredPrompt=null;if(r&&r.outcome==='accepted')toast('Installing Lock-In');}).catch(()=>{});}return;}
+  if(pending.mode==='addHabit'){
+    const name=$('dlgInput').value.trim();
+    if(!name){$('dlgErr').hidden=false;$('dlgInput').focus();return;}
+    if(state.habits.some(x=>x.name.toLowerCase()===name.toLowerCase())){$('dlgErr').textContent='You already have '+name+'.';$('dlgErr').hidden=false;$('dlgInput').focus();return;}
+    const goal=Math.max(0,Math.min(31,parseInt($('dlgGoal').value,10)||0));
+    const id='h'+Date.now().toString(36);
+    state.habits.push({id,name,goal,subs:[]});
+    closeSheet();render();save();toast(name+' added');
+    const nb=document.querySelector(`[data-tog="${id}"]`); if(nb){nb.scrollIntoView({block:'center',behavior:'smooth'});}
+    return;
+  }
   if(pending.mode==='restore'){applyData(pending.data);closeSheet();render();save();toast('Backup restored');return;}
   if(pending.mode==='removeHabit'){
     const h=state.habits.find(x=>x.id===pending.hid);
@@ -546,13 +572,13 @@ function confirmSheet(){
 $('dlgOk').addEventListener('click',confirmSheet);
 $('dlgCancel').addEventListener('click',closeSheet);
 $('dlg').addEventListener('click',e=>{if(e.target===$('dlg'))closeSheet();});
-$('dlgInput').addEventListener('input',()=>{$('dlgErr').hidden=true;$('dlgErr').textContent='Enter an exercise name.';});
-$('dlgInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();confirmSheet();}});
+$('dlgInput').addEventListener('input',()=>{$('dlgErr').hidden=true;$('dlgErr').textContent='Enter a name.';});
+['dlgInput','dlgGoal'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();confirmSheet();}}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('dlg').hidden)closeSheet();});
 
 /* persistence: on this device, versioned so updates never wipe data */
-const APP_VERSION='1.0.1';
-const SCHEMA=1;
+const APP_VERSION='1.1.0';
+const SCHEMA=2;
 const LS='lockin-data';
 const LEGACY=['lockin-ledger-v1'];
 function setSave(on,txt){$('saveState').innerHTML=`<span class="dot${on?' on':''}"></span>${txt}`;}
@@ -561,6 +587,7 @@ function migrate(obj){
   const o=JSON.parse(JSON.stringify(obj));
   let v=o.schema||0;
   if(v<1){o.habits=o.habits.map(withSubs);o.months=o.months||{};v=1;}
+  if(v<2){o.habits=o.habits.map(withSubs);v=2;}  // every habit can hold sub-items
   // future: if(v<2){ ...upgrade to schema 2... ; v=2; }
   o.schema=v;
   return o;
