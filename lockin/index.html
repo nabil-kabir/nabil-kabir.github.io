@@ -148,10 +148,25 @@ tr.addhabit td{height:52px;border-top:1px solid var(--line)}
 .btn.danger{background:var(--w4);color:var(--ink);border-color:var(--w4)}
 .btn.danger:hover{background:color-mix(in srgb,var(--w4) 85%,#fff)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;background:var(--chalk);color:var(--ink);border-radius:999px;padding:10px 18px;font-size:14px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);max-width:calc(100% - 32px);text-align:center}
-.toast:not([hidden]){animation:rise .2s ease both}
+.tact{margin-left:14px;background:var(--ink);color:var(--chalk);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600}
+.bin{background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r);overflow:hidden}
+.binhead{width:100%;display:flex;align-items:center;gap:12px;padding:16px 20px;text-align:left;flex-wrap:wrap}
+.binhead[aria-expanded="true"] .tog svg{transform:rotate(90deg)}
+.bintitle{font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:.04em;text-transform:uppercase}
+.binhint{font-size:12.5px;color:var(--faint);margin-left:auto}
+.binlist{list-style:none;margin:0;padding:0 20px 8px;display:grid}
+.binrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line-soft)}
+.binmeta{display:grid;gap:3px;min-width:0}
+.binmeta b{font-weight:600;font-size:14.5px}
+.binmeta span{font-size:12.5px;color:var(--muted)}
+.binact{display:flex;align-items:center;gap:10px;flex:none}
+.btn.small{padding:7px 14px;font-size:13px}
+@media (max-width:720px){.binhint{margin-left:0;flex-basis:100%}.bin .binhead{padding:14px 16px}.binlist{padding:0 16px 6px}}
+.toast:not([hidden]){animation:trise .2s ease both}
+@keyframes trise{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 
 /* app chrome: update bar, install, data */
-.updbar{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:12px;background:var(--raised);border:1px solid var(--line);border-radius:999px;padding:6px 6px 6px 16px;font-size:13.5px;box-shadow:0 12px 30px rgba(0,0,0,.45);max-width:calc(100% - 32px);animation:rise .22s ease both}
+.updbar{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:12px;background:var(--raised);border:1px solid var(--line);border-radius:999px;padding:6px 6px 6px 16px;font-size:13.5px;box-shadow:0 12px 30px rgba(0,0,0,.45);max-width:calc(100% - 32px);animation:trise .22s ease both}
 .updbar .btn{padding:7px 14px;font-size:13px}
 .install{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r);padding:14px 16px;font-size:14px;color:var(--muted)}
 .install b{color:var(--chalk);font-weight:600}
@@ -269,6 +284,15 @@ tr.addhabit td{height:52px;border-top:1px solid var(--line)}
     <div class="scroller" id="scroller"><table class="grid" id="grid"></table></div>
   </section>
 
+  <section class="bin" id="binSec" hidden aria-label="Removed rows">
+    <button class="binhead" id="binTog" aria-expanded="false" aria-controls="binList">
+      <span class="tog" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="m4.5 2.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="bintitle">Removed</span><span class="count" id="binCount">0</span>
+      <span class="binhint">Bring back anything you removed by mistake</span>
+    </button>
+    <ul class="binlist" id="binList" hidden></ul>
+  </section>
+
   <section class="lower">
     <div class="card">
       <div class="cardhead"><h3>Daily completion</h3><span class="eyebrow" id="avgLbl">Avg 0%</span></div>
@@ -339,10 +363,10 @@ const MONTHS=['January','February','March','April','May','June','July','August',
 const DOW=['Su','Mo','Tu','We','Th','Fr','Sa'];
 const check='<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7" stroke="#0A0C11" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
-let state={habits:JSON.parse(JSON.stringify(DEFAULT_HABITS)),months:{}};
+let state={habits:JSON.parse(JSON.stringify(DEFAULT_HABITS)),months:{},trash:[]};
 const now=new Date();
 let view={y:now.getFullYear(),m:now.getMonth()};
-let justOpened=null;
+let justOpened=null, binOpen=false;
 let editing=false, store=null, saveTimer=null, scrolledTo=null;
 
 const $=id=>document.getElementById(id);
@@ -387,7 +411,7 @@ function render(){
   $('sStreak').innerHTML=c.streak+'<small>'+(c.streak===1?'day':'days')+'</small>';
   if(c.best){$('sBest').textContent=c.best.h.name;$('sBestSub').textContent=Math.round(c.best.p*100)+'% of goal · '+c.best.k+(c.best.k===1?' day':' days');}
   else{$('sBest').textContent='—';$('sBestSub').textContent='tick a few days to see';}
-  renderGrid(c); renderChart(c); renderAnalysis(c);
+  renderGrid(c); renderChart(c); renderAnalysis(c); renderTrash();
 }
 
 function renderGrid(c){
@@ -407,7 +431,7 @@ function renderGrid(c){
     const tog=hasList?`<button class="tog" data-tog="${hb.id}" aria-expanded="${isOpen}" aria-controls="subs_${hb.id}" aria-label="${isOpen?'Collapse':'Expand'} ${esc(hb.name)} exercises"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="m4.5 2.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`:'<span class="tog-sp"></span>';
     h+='<tr><td class="hcol">';
     if(editing) h+=`<div class="editrow"><input id="n_${hb.id}" data-f="name" data-id="${hb.id}" value="${esc(hb.name)}" aria-label="Habit name"><input id="g_${hb.id}" data-f="goal" data-id="${hb.id}" type="number" min="0" max="31" value="${hb.goal}" aria-label="Goal days"><button class="del" data-del="${hb.id}" aria-label="Remove ${esc(hb.name)}"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>`;
-    else h+=`<div class="hname"><span class="hlead">${tog}<span>${esc(hb.name)}</span>${subs.length&&!isOpen?`<span class="count">${subs.length}</span>`:''}</span><em class="num">${k}/${hb.goal}</em></div>`;
+    else h+=`<div class="hname"><span class="hlead">${tog}<span>${esc(hb.name)}</span>${subs.length&&!isOpen?`<span class="count">${subs.length}</span>`:''}</span><span class="subr"><em class="num">${k}/${hb.goal}</em><button class="mini" data-rmh="${hb.id}" aria-label="Remove ${esc(hb.name)}"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></span></div>`;
     h+='</td>';
     const row=(id,label)=>{let r='';for(let d=1;d<=n;d++){
       const on=has(id,d), fut=c.ld<d;
@@ -462,6 +486,8 @@ function renderAnalysis(c){
 $('grid').addEventListener('click',e=>{
   const del=e.target.closest('[data-del]');
   if(del){askRemoveHabit(del.dataset.del);return;}
+  const rmh=e.target.closest('[data-rmh]');
+  if(rmh){askRemoveHabit(rmh.dataset.rmh);return;}
   const rm=e.target.closest('[data-rm]');
   if(rm){askRemove(rm.dataset.of,rm.dataset.rm,rm);return;}
   const ah=e.target.closest('[data-addhabit]');
@@ -485,6 +511,8 @@ $('grid').addEventListener('change',e=>{
   else h.goal=Math.max(0,Math.min(31,parseInt(e.target.value,10)||0));
   render(); save();
 });
+$('binTog').addEventListener('click',()=>{binOpen=!binOpen;renderTrash();});
+$('binList').addEventListener('click',e=>{const r=e.target.closest('[data-restore]');if(r){restoreTrash(r.dataset.restore);return;}const p=e.target.closest('[data-purge]');if(p)askPurge(p.dataset.purge);});
 $('editBtn').addEventListener('click',()=>{editing=!editing;$('editBtn').setAttribute('aria-pressed',editing);$('editBtn').textContent=editing?'Done editing':'Edit habits';render();});
 $('prev').addEventListener('click',()=>{view.m--;if(view.m<0){view.m=11;view.y--;}render();});
 $('next').addEventListener('click',()=>{view.m++;if(view.m>11){view.m=0;view.y++;}render();});
@@ -492,7 +520,7 @@ $('todayBtn').addEventListener('click',()=>{view={y:now.getFullYear(),m:now.getM
 
 /* confirm before adding or removing an exercise */
 let pending=null, lastFocus=null, toastTimer=null;
-function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.hidden=true;},2600);}
+function toast(msg,act){const t=$('toast');t.textContent=msg;if(act){const b=document.createElement('button');b.className='tact';b.textContent=act.label;b.onclick=()=>{t.hidden=true;act.fn();};t.appendChild(b);}t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.hidden=true;},act?5000:2600);}
 function openSheet(cfg){
   pending=cfg; lastFocus=cfg.from||null;
   $('dlgTitle').textContent=cfg.title;
@@ -518,14 +546,43 @@ function askAddHabit(from){
 function askRemove(hid,sid,from){
   const h=state.habits.find(x=>x.id===hid); const s=h&&(h.subs||[]).find(x=>x.id===sid); if(!s)return;
   let days=0; Object.values(state.months).forEach(m=>{days+=(m[sid]||[]).length;});
-  const hist=days?` Its <b>${days} logged ${days===1?'day':'days'}</b> will be cleared. ${esc(h.name)} ticks stay as they are.`:` It has no logged days yet.`;
-  openSheet({mode:'remove',hid,sid,from:null,title:'Remove '+term(h)+'?',text:`Remove <b>${esc(s.name)}</b> from ${esc(h.name)}.${hist}`,ok:'Remove',danger:true});
+  const hist=days?` Its <b>${days} logged ${days===1?'day':'days'}</b> are kept.`:'';
+  openSheet({mode:'remove',hid,sid,from:null,title:'Remove '+term(h)+'?',text:`Move <b>${esc(s.name)}</b> out of ${esc(h.name)}.${hist} You can bring it back from <b>Removed</b> at any time.`,ok:'Remove',danger:true});
 }
 function askRemoveHabit(hid){
   const h=state.habits.find(x=>x.id===hid); if(!h)return;
   let days=0; Object.values(state.months).forEach(m=>{days+=(m[hid]||[]).length;});
   const extra=(h.subs&&h.subs.length)?` Its ${h.subs.length} ${term(h)}${h.subs.length===1?'':'s'} go with it.`:'';
-  openSheet({mode:'removeHabit',hid,title:'Remove habit?',text:`Remove <b>${esc(h.name)}</b> and its <b>${days} logged ${days===1?'day':'days'}</b>.${extra} This can't be undone unless you have a backup.`,ok:'Remove habit',danger:true});
+  openSheet({mode:'removeHabit',hid,title:'Remove habit?',text:`Move <b>${esc(h.name)}</b> to <b>Removed</b>.${extra}${days?` Its ${days} logged ${days===1?'day':'days'} are kept.`:''} You can bring it back at any time.`,ok:'Remove habit',danger:true});
+}
+function askPurge(tid){
+  const t=state.trash.find(x=>x.tid===tid); if(!t)return;
+  const d=trashDays(t);
+  openSheet({mode:'purge',tid,title:'Delete forever?',text:`Permanently delete <b>${esc(t.item.name)}</b>${d?` and its <b>${d} logged ${d===1?'day':'days'}</b>`:''}. This can't be undone.`,ok:'Delete forever',danger:true});
+}
+function trashDays(t){const ids=[t.item.id].concat((t.item.subs||[]).map(x=>x.id));let d=0;Object.values(state.months).forEach(m=>ids.forEach(id=>{d+=(m[id]||[]).length;}));return d;}
+function idInUse(id){return state.habits.some(h=>h.id===id||(h.subs||[]).some(s=>s.id===id));}
+function restoreTrash(tid){
+  const t=state.trash.find(x=>x.tid===tid); if(!t)return;
+  if(t.kind==='habit'){
+    state.habits.splice(Math.min(t.index,state.habits.length),0,t.item);
+  }else{
+    let p=state.habits.find(h=>h.id===t.parentId);
+    if(!p){const pt=state.trash.find(x=>x.kind==='habit'&&x.item.id===t.parentId);
+      if(pt){state.trash=state.trash.filter(x=>x!==pt);state.habits.splice(Math.min(pt.index,state.habits.length),0,pt.item);p=pt.item;}
+      else{p={id:t.parentId,name:t.parentName,goal:12,subs:[]};state.habits.push(p);}}
+    p.subs=p.subs||[]; p.subs.splice(Math.min(t.index,p.subs.length),0,t.item); open[p.id]=true; saveOpen();
+  }
+  state.trash=state.trash.filter(x=>x.tid!==tid);
+  render();save();toast(t.item.name+' is back');
+}
+function renderTrash(){
+  const T=state.trash||[]; $('binSec').hidden=!T.length; $('binCount').textContent=T.length;
+  $('binTog').setAttribute('aria-expanded',binOpen); $('binList').hidden=!binOpen;
+  const fmt=iso=>{const d=new Date(iso);return isNaN(d)?'':d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3);};
+  $('binList').innerHTML=T.map(t=>{const d=trashDays(t);
+    const meta=t.kind==='habit'?`Habit${(t.item.subs||[]).length?' · '+t.item.subs.length+(t.item.subs.length===1?' item':' items'):''}`:`${term({name:t.parentName})==='exercise'?'Exercise':'Item'} in ${esc(t.parentName)}`;
+    return `<li class="binrow"><div class="binmeta"><b>${esc(t.item.name)}</b><span>${meta} · ${d} ${d===1?'day':'days'} logged · removed ${fmt(t.removedAt)}</span></div><div class="binact"><button class="btn small" data-restore="${t.tid}">Restore</button><button class="mini" data-purge="${t.tid}" aria-label="Delete ${esc(t.item.name)} forever"><svg width="11" height="11" viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div></li>`;}).join('');
 }
 function askRestore(data,fname){
   const n=Object.values(data.months||{}).reduce((s,m)=>s+Object.values(m).reduce((a,x)=>a+(x||[]).length,0),0);
@@ -547,11 +604,18 @@ function confirmSheet(){
   }
   if(pending.mode==='restore'){applyData(pending.data);closeSheet();render();save();toast('Backup restored');return;}
   if(pending.mode==='removeHabit'){
-    const h=state.habits.find(x=>x.id===pending.hid);
-    const ids=[pending.hid].concat(((h&&h.subs)||[]).map(s=>s.id));
-    state.habits=state.habits.filter(x=>x.id!==pending.hid);
-    Object.values(state.months).forEach(m=>ids.forEach(id=>{delete m[id];}));
-    closeSheet();render();save();toast((h?h.name:'Habit')+' removed');return;
+    const i=state.habits.findIndex(x=>x.id===pending.hid); if(i<0){closeSheet();return;}
+    const h=state.habits[i]; const tid='t'+Date.now().toString(36);
+    state.trash.unshift({tid,kind:'habit',item:h,index:i,removedAt:new Date().toISOString()});
+    state.habits.splice(i,1);
+    closeSheet();render();save();toast(h.name+' moved to Removed',{label:'Undo',fn:()=>restoreTrash(tid)});return;
+  }
+  if(pending.mode==='purge'){
+    const t=state.trash.find(x=>x.tid===pending.tid);
+    if(t){const ids=[t.item.id].concat((t.item.subs||[]).map(x=>x.id));
+      state.trash=state.trash.filter(x=>x.tid!==t.tid);
+      if(!idInUse(t.item.id)) Object.values(state.months).forEach(m=>ids.forEach(id=>{delete m[id];}));}
+    closeSheet();render();save();toast('Deleted for good');return;
   }
   const h=state.habits.find(x=>x.id===pending.hid); if(!h){closeSheet();return;}
   if(pending.mode==='add'){
@@ -561,11 +625,11 @@ function confirmSheet(){
     h.subs=h.subs||[]; h.subs.push({id:h.id+'x'+Date.now().toString(36),name});
     open[h.id]=true; saveOpen(); closeSheet(); render(); save(); toast(name+' added to '+h.name);
   }else{
-    const s=(h.subs||[]).find(x=>x.id===pending.sid);
-    h.subs=(h.subs||[]).filter(x=>x.id!==pending.sid);
-    Object.values(state.months).forEach(m=>{delete m[pending.sid];});
-    const fb=document.querySelector(`[data-add="${h.id}"]`);
-    closeSheet(); render(); save(); toast((s?s.name:'Exercise')+' removed');
+    const si=(h.subs||[]).findIndex(x=>x.id===pending.sid); if(si<0){closeSheet();return;}
+    const s=h.subs[si]; const tid='t'+Date.now().toString(36);
+    state.trash.unshift({tid,kind:'sub',item:s,parentId:h.id,parentName:h.name,index:si,removedAt:new Date().toISOString()});
+    h.subs.splice(si,1);
+    closeSheet(); render(); save(); toast(s.name+' moved to Removed',{label:'Undo',fn:()=>restoreTrash(tid)});
     const nb=document.querySelector(`[data-add="${h.id}"]`); if(nb)nb.focus();
   }
 }
@@ -577,8 +641,8 @@ $('dlgInput').addEventListener('input',()=>{$('dlgErr').hidden=true;$('dlgErr').
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('dlg').hidden)closeSheet();});
 
 /* persistence: on this device, versioned so updates never wipe data */
-const APP_VERSION='1.1.0';
-const SCHEMA=2;
+const APP_VERSION='1.2.0';
+const SCHEMA=3;
 const LS='lockin-data';
 const LEGACY=['lockin-ledger-v1'];
 function setSave(on,txt){$('saveState').innerHTML=`<span class="dot${on?' on':''}"></span>${txt}`;}
@@ -588,12 +652,13 @@ function migrate(obj){
   let v=o.schema||0;
   if(v<1){o.habits=o.habits.map(withSubs);o.months=o.months||{};v=1;}
   if(v<2){o.habits=o.habits.map(withSubs);v=2;}  // every habit can hold sub-items
-  // future: if(v<2){ ...upgrade to schema 2... ; v=2; }
+  if(v<3){o.trash=Array.isArray(o.trash)?o.trash:[];v=3;}  // removed rows are kept in a bin
+  // next change: if(v<4){ ...upgrade... ; v=4; }
   o.schema=v;
   return o;
 }
-function applyData(o){state.habits=o.habits;state.months=o.months||{};}
-function snapshot(){return{app:'lockin',schema:SCHEMA,version:APP_VERSION,saved:new Date().toISOString(),habits:state.habits,months:state.months};}
+function applyData(o){state.habits=o.habits;state.months=o.months||{};state.trash=o.trash||[];}
+function snapshot(){return{app:'lockin',schema:SCHEMA,version:APP_VERSION,saved:new Date().toISOString(),habits:state.habits,months:state.months,trash:state.trash};}
 function save(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{
