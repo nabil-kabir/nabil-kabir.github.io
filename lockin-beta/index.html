@@ -427,7 +427,7 @@ const DEFAULT_SUBS={
 function withSubs(h){if(!Array.isArray(h.subs))h.subs=DEFAULT_SUBS[h.id]?DEFAULT_SUBS[h.id].map((n,j)=>({id:h.id+'x'+(j+1),name:n})):[];return h;}
 const term=h=>/day|workout|gym|lift|train/i.test(h.name)?'exercise':'item';
 DEFAULT_HABITS.forEach(withSubs);
-const OPEN_KEY='lockin-open-v1';
+const OPEN_KEY='lockinbeta-open-v1';
 let open={h1:true};
 try{const o=JSON.parse(localStorage.getItem(OPEN_KEY)||'null');if(o&&typeof o==='object')open=o;}catch(e){}
 function saveOpen(){try{localStorage.setItem(OPEN_KEY,JSON.stringify(open));}catch(e){}}
@@ -718,8 +718,8 @@ document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('dlg').
 /* persistence: on this device, versioned so updates never wipe data */
 const APP_VERSION='2.0.0';
 const SCHEMA=3;
-const LS='lockin-data';
-const LEGACY=['lockin-ledger-v1'];
+const LS='lockinbeta-data';
+const LEGACY=['lockinbeta-ledger-v1'];
 function setSave(kind,txt,link){$('saveState').innerHTML=`<span class="dot${kind===true?' on':kind?' '+kind:''}"></span>${txt}${link?'<button class="signin" data-signin="1">Sign in</button>':''}`;}
 function migrate(obj){
   if(!obj||typeof obj!=='object'||!Array.isArray(obj.habits))return null;
@@ -746,9 +746,9 @@ function saveLocal(){
 function save(){ if(cloud&&user)cloud.push(); saveLocal(); }
 /* accounts: optional sign-in that syncs this ledger across devices (Firebase, loaded on demand from cloud.js) */
 const FIREBASE_CONFIG=(window.__lockinTest&&window.__lockinTest.config)||{
-  apiKey:'AIzaSyAm6n9Bq8j0_DzisOAP3wagLRT1Tgn0NjY', authDomain:'lockin-app-795ad.firebaseapp.com', projectId:'lockin-app-795ad',
-  storageBucket:'lockin-app-795ad.firebasestorage.app', messagingSenderId:'297256555852', appId:'1:297256555852:web:35e16426f601a2eedf2be9'};
-const OWNER_KEY='lockin-owner', EMAIL_KEY='lockin-email', GUEST_KEY='lockin-guest';
+  apiKey:'AIzaSyAm6n9Bq8j0_DzisOAP3wagLRT1Tgn0NjY', authDomain:'lockinbeta-app-795ad.firebaseapp.com', projectId:'lockinbeta-app-795ad',
+  storageBucket:'lockinbeta-app-795ad.firebasestorage.app', messagingSenderId:'297256555852', appId:'1:297256555852:web:35e16426f601a2eedf2be9'};
+const OWNER_KEY='lockinbeta-owner', EMAIL_KEY='lockinbeta-email', GUEST_KEY='lockinbeta-guest';
 const lsGet=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
 let cloud=null, cloudP=null, user=null, authKnown=false, syncStatus=null, syncing=false, authMode='in';
@@ -871,7 +871,7 @@ $('saveState').addEventListener('click',e=>{if(e.target.closest('[data-signin]')
 async function doSignOut(){
   setSave('busy','Signing out');
   try{if(cloud)await cloud.signOut();}catch(e){}
-  [LS,OWNER_KEY,EMAIL_KEY,GUEST_KEY,'lockin-base'].forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});
+  [LS,OWNER_KEY,EMAIL_KEY,GUEST_KEY,'lockinbeta-base'].forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});
   location.reload();
 }
 if(FIREBASE_CONFIG){
@@ -893,7 +893,7 @@ $('ver').textContent='v'+APP_VERSION;
 /* backup and restore */
 $('backupBtn').addEventListener('click',async()=>{
   const d=new Date(),stamp=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  const name='lockin-backup-'+stamp+'.json';
+  const name='lockinbeta-backup-'+stamp+'.json';
   const blob=new Blob([JSON.stringify(snapshot(),null,1)],{type:'application/json'});
   try{
     const file=new File([blob],name,{type:'application/json'});
@@ -920,7 +920,7 @@ const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator
 const isIOS=/iphone|ipad|ipod/i.test(UA)||(/Macintosh/.test(UA)&&navigator.maxTouchPoints>1);
 const inApp=/Instagram|FBAN|FBAV|FB_IAB|Messenger|Line\/|TikTok|Snapchat|LinkedInApp|Twitter/i.test(UA);
 const iosOther=isIOS&&/CriOS|FxiOS|EdgiOS/.test(UA);
-function dismissed(){try{return localStorage.getItem('lockin-install-dismissed')==='1';}catch(e){return false;}}
+function dismissed(){try{return localStorage.getItem('lockinbeta-install-dismissed')==='1';}catch(e){return false;}}
 function installGuide(){
   if(inApp) return {title:'Open in your browser first',text:'You opened Lock-In inside another app, and in-app browsers can\'t install apps.',steps:`<li><div>Tap the <b>⋯</b> menu in this app's browser.</div></li><li><div>Choose <b>Open in ${isIOS?'Safari':'Chrome'}</b> or <b>Open in external browser</b>.</div></li><li><div>Then tap <b>Install app</b> again.</div></li>`,ok:'Got it',cancel:false};
   if(isIOS) return {title:'Add Lock-In to your Home Screen',text:'iPhones install web apps from the Share menu.'+(iosOther?' This works in Safari, Chrome and Edge on iOS 16.4 or later.':''),steps:'<li><div>Tap the <b>⋯</b> button at the bottom right.<span>On older iPhones, tap the Share button (a square with an arrow) instead.</span></div></li><li><div>Tap <b>Share</b>, then scroll down and tap <b>Add to Home Screen</b>.<span>Not listed? Tap View More at the end of the row.</span></div></li><li><div>Keep <b>Open as Web App</b> switched on, then tap <b>Add</b>.</div></li>',ok:'Got it',cancel:false};
@@ -940,7 +940,7 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;r
 refreshInstallUI();
 $('installNav').addEventListener('click',openInstall);
 $('installGo').addEventListener('click',()=>{ if(deferredPrompt&&!isIOS&&!inApp){pending={mode:'install'};confirmSheet();} else openInstall(); });
-$('installNo').addEventListener('click',()=>{$('install').hidden=true;try{localStorage.setItem('lockin-install-dismissed','1');}catch(e){}});
+$('installNo').addEventListener('click',()=>{$('install').hidden=true;try{localStorage.setItem('lockinbeta-install-dismissed','1');}catch(e){}});
 addEventListener('appinstalled',()=>{$('install').hidden=true;$('installNav').hidden=true;});
 
 /* updates: check on every open, offer a one-tap refresh */
