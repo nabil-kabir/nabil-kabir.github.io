@@ -774,7 +774,7 @@ const appApi={
 };
 function startSync(){
   if(!user||syncing)return; syncing=true;
-  cloud.startSync(user,appApi).catch(err=>{syncing=false;syncStatus={phase:'error',error:err};showStatus();});
+  cloud.startSync(user,appApi).catch(err=>{syncing=false;syncStatus={phase:'error',error:err};showStatus();setTimeout(()=>{if(user&&!syncing)startSync();},20000);});
 }
 addEventListener('online',()=>{if(user&&!syncing)startSync();});
 function onUser(u){
@@ -793,7 +793,8 @@ function showStatus(){
   const s=syncStatus||{phase:'linking'};
   if(s.phase==='linking'||s.connecting)setSave('busy','Connecting your account');
   else if(s.phase==='error'){const c=s.error&&s.error.code||'';
-    setSave('err',/permission/.test(c)?'Sync blocked by the database rules':!navigator.onLine||/unavailable|network/.test(c)?'Offline · saved here, syncs when you’re back online':'Couldn’t sync just now · saved on this device');
+    const why=c?' ('+String(c).replace('firestore/','')+')':'';
+    setSave('err',/permission/.test(c)?'Sync blocked by the database rules'+why:!navigator.onLine?'Offline · saved here, syncs when you’re back online':'Can’t reach the sync server · saved on this device'+why);
     if(s.error)console.warn('Lock-In sync:',s.error);}
   else if(s.offline||!navigator.onLine)setSave('warn','Offline · saved here, syncs when you’re back online');
   else if(s.pending)setSave('busy','Syncing');
