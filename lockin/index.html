@@ -147,7 +147,7 @@ tr.addhabit td{height:52px;border-top:1px solid var(--line)}
 .btn.go:hover{background:#fff}
 .btn.danger{background:var(--w4);color:var(--ink);border-color:var(--w4)}
 .btn.danger:hover{background:color-mix(in srgb,var(--w4) 85%,#fff)}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;background:var(--chalk);color:var(--ink);border-radius:999px;padding:10px 18px;font-size:14px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);max-width:calc(100% - 32px);text-align:center}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;background:var(--chalk);color:var(--ink);border-radius:999px;padding:10px 18px;font-size:14px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);max-width:calc(100% - 32px);width:max-content;text-align:center}
 .tact{margin-left:14px;background:var(--ink);color:var(--chalk);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600}
 .bin{background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r);overflow:hidden}
 .binhead{width:100%;display:flex;align-items:center;gap:12px;padding:16px 20px;text-align:left;flex-wrap:wrap}
@@ -179,6 +179,49 @@ tr.addhabit td{height:52px;border-top:1px solid var(--line)}
 .steps li::before{content:counter(st);width:28px;height:28px;border-radius:50%;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--mono);font-size:12px;color:var(--muted)}
 .steps li span{color:var(--muted);display:block;font-size:13px;margin-top:2px}
 .ver{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.06em}
+
+/* account: sign-in screen, account button, sync status */
+.nav .acct{width:42px;height:42px;border-radius:50%;font-family:var(--display);font-weight:800;font-size:19px;text-transform:uppercase;background:var(--chalk);color:var(--ink);border-color:var(--chalk)}
+.nav .acct:hover{background:#fff;border-color:#fff}
+.nav .acct.guest{width:auto;border-radius:21px;padding:0 16px;font-family:var(--body);font-size:13px;font-weight:600;text-transform:none;background:none;color:var(--chalk);border-color:var(--w5)}
+.nav .acct.guest:hover{background:color-mix(in srgb,var(--w5) 12%,transparent)}
+.authscreen{position:fixed;inset:0;z-index:80;overflow-y:auto;background:radial-gradient(120% 70% at 100% 0%,color-mix(in srgb,var(--w1) 16%,transparent),transparent 60%),radial-gradient(90% 60% at 0% 100%,color-mix(in srgb,var(--w3) 10%,transparent),transparent 60%),var(--ink);display:grid;place-items:center;padding:calc(24px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.authscreen:not([hidden]) .authcard{animation:rise .28s ease both}
+.authcard{width:min(400px,100%);display:grid;gap:18px;position:relative}
+.authcard h2{font-family:var(--display);font-weight:900;font-size:clamp(68px,20vw,104px);line-height:.82;text-transform:uppercase;margin:4px 0 0;letter-spacing:-.01em}
+.authcard h2 span{color:var(--faint);font-weight:600}
+.authbands{display:flex;gap:4px;height:6px}
+.authbands i{flex:1;border-radius:3px}
+.authlead{margin:0;color:var(--muted);font-size:15px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px}
+.seg button{border-radius:999px;padding:9px 10px;font-size:14px;font-weight:600;color:var(--muted);transition:background .2s,color .2s}
+.seg button[aria-selected="true"]{background:var(--chalk);color:var(--ink)}
+.authform{display:grid;gap:10px}
+.authform input{background:var(--panel);border:1px solid var(--line);color:var(--chalk);border-radius:12px;padding:13px 14px;font:inherit;font-size:16px;width:100%}
+.authform input:focus{outline:none;border-color:var(--muted)}
+.authform label{margin-top:4px}
+.pw{position:relative}
+.pw input{padding-right:70px}
+.pwshow{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:12.5px;font-weight:600;color:var(--muted);padding:8px 10px;border-radius:8px}
+.pwshow:hover{color:var(--chalk);background:var(--raised)}
+.hint{font-size:12.5px;color:var(--faint)}
+.authform .err{color:var(--w4);font-size:13.5px}
+.authform .ok{color:var(--good);font-size:13.5px}
+.btn.wide{width:100%;padding:13px 18px;font-size:15px}
+.btn[disabled]{opacity:.6;cursor:progress}
+.linkbtn{justify-self:center;font-size:13.5px;color:var(--muted);text-decoration:underline;text-underline-offset:3px;padding:6px}
+.linkbtn:hover{color:var(--chalk)}
+.or{display:flex;align-items:center;gap:12px;color:var(--faint);font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.guestnote{margin:0;font-size:12.5px;color:var(--muted);display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:2px;line-height:1.5}
+.guestnote .dot{margin-top:6px}
+.authx{position:absolute;right:-4px;top:-4px;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted)}
+.authx:hover{color:var(--chalk);border-color:var(--muted)}
+.dot.warn{background:var(--w5)}
+.dot.err{background:var(--w4)}
+.dot.busy{background:var(--w2);animation:pulse 1s ease-in-out infinite alternate}
+@keyframes pulse{to{opacity:.35}}
+#saveState .signin{color:var(--chalk);text-decoration:underline;text-underline-offset:3px;margin-left:6px;font-size:12.5px}
 
 /* edit */
 .editrow{display:grid;grid-template-columns:minmax(0,1fr) 84px 36px;gap:8px;align-items:center}
@@ -253,6 +296,7 @@ tr.addhabit td{height:52px;border-top:1px solid var(--line)}
       <button id="prev" aria-label="Previous month"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3 5 8l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button class="today-btn" id="todayBtn">This month</button>
       <button class="today-btn" id="installNav" hidden>Install app</button>
+      <button class="acct guest" id="acctBtn" hidden>Sign in</button>
       <button id="next" aria-label="Next month"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="m6 3 5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </nav>
   </header>
@@ -327,6 +371,34 @@ tr.addhabit td{height:52px;border-top:1px solid var(--line)}
   </div>
   <div class="toast" id="toast" role="status" hidden></div>
   <div class="updbar" id="updBar" role="status" hidden><span>New version available</span><button class="btn go" id="updGo">Update</button></div>
+
+  <div class="authscreen" id="auth" hidden role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <div class="authcard">
+      <button class="authx" id="authClose" aria-label="Close" hidden><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+      <div class="eyebrow">Lock-In · Training ledger</div>
+      <h2 id="authTitle">Lock <span>in.</span></h2>
+      <div class="authbands" aria-hidden="true"><i style="background:var(--w1)"></i><i style="background:var(--w2)"></i><i style="background:var(--w3)"></i><i style="background:var(--w4)"></i><i style="background:var(--w5)"></i></div>
+      <p class="authlead" id="authLead">Sign in to keep your ticks safe and in sync on every device you use.</p>
+      <div class="seg" role="tablist" aria-label="Account">
+        <button role="tab" id="tabIn" aria-selected="true">Log in</button>
+        <button role="tab" id="tabUp" aria-selected="false">Create account</button>
+      </div>
+      <form class="authform" id="authForm" novalidate>
+        <label class="eyebrow" for="authEmail">Email</label>
+        <input id="authEmail" type="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" placeholder="you@example.com">
+        <label class="eyebrow" for="authPw">Password</label>
+        <div class="pw"><input id="authPw" type="password" autocomplete="current-password" placeholder="Your password"><button type="button" class="pwshow" id="pwShow" aria-label="Show password">Show</button></div>
+        <span class="hint" id="pwHint" hidden>At least 8 characters.</span>
+        <span class="err" id="authErr" role="alert" hidden></span>
+        <span class="ok" id="authOk" role="status" hidden></span>
+        <button class="btn go wide" id="authGo" type="submit">Log in</button>
+        <button type="button" class="linkbtn" id="forgot">Forgot password?</button>
+      </form>
+      <div class="or" id="authOr"><span>or</span></div>
+      <button class="btn wide" id="guestBtn">Use without an account</button>
+      <p class="guestnote" id="guestNote"><span class="dot warn"></span><span>Without an account, your ticks are saved on this device only. They can be lost if you clear your browser data, change phones, or don't open the app for a while.</span></p>
+    </div>
+  </div>
 
   <footer class="foot">
     <span id="saveState"><span class="dot"></span>Loading your ledger</span>
@@ -586,10 +658,12 @@ function renderTrash(){
 }
 function askRestore(data,fname){
   const n=Object.values(data.months||{}).reduce((s,m)=>s+Object.values(m).reduce((a,x)=>a+(x||[]).length,0),0);
-  openSheet({mode:'restore',data,title:'Restore backup?',text:`Replace everything on this phone with <b>${esc(fname)}</b>: ${data.habits.length} habits and ${n} ticks. Your current data will be overwritten.`,ok:'Restore',danger:true});
+  openSheet({mode:'restore',data,title:'Restore backup?',text:`Replace everything ${user?'in your account':'on this phone'} with <b>${esc(fname)}</b>: ${data.habits.length} habits and ${n} ticks. Your current data will be overwritten.`,ok:'Restore',danger:true});
 }
 function confirmSheet(){
   if(!pending)return;
+  if(pending.mode==='choice'){const r=pending.resolve;closeSheet();r('merge');return;}
+  if(pending.mode==='account'){closeSheet();doSignOut();return;}
   if(pending.mode==='install'){const dp=deferredPrompt;closeSheet();if(dp){dp.prompt();dp.userChoice.then(r=>{deferredPrompt=null;if(r&&r.outcome==='accepted')toast('Installing Lock-In');}).catch(()=>{});}return;}
   if(pending.mode==='addHabit'){
     const name=$('dlgInput').value.trim();
@@ -634,18 +708,19 @@ function confirmSheet(){
   }
 }
 $('dlgOk').addEventListener('click',confirmSheet);
-$('dlgCancel').addEventListener('click',closeSheet);
-$('dlg').addEventListener('click',e=>{if(e.target===$('dlg'))closeSheet();});
+function cancelSheet(){if(pending&&pending.mode==='choice'){const r=pending.resolve;closeSheet();r('account');return;}closeSheet();}
+$('dlgCancel').addEventListener('click',cancelSheet);
+$('dlg').addEventListener('click',e=>{if(e.target===$('dlg')&&!(pending&&pending.modal))closeSheet();});
 $('dlgInput').addEventListener('input',()=>{$('dlgErr').hidden=true;$('dlgErr').textContent='Enter a name.';});
 ['dlgInput','dlgGoal'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();confirmSheet();}}));
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('dlg').hidden)closeSheet();});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('dlg').hidden){if(!(pending&&pending.modal))closeSheet();}else if(!$('auth').hidden&&!$('authClose').hidden)hideAuth();});
 
 /* persistence: on this device, versioned so updates never wipe data */
-const APP_VERSION='1.2.0';
+const APP_VERSION='2.0.0';
 const SCHEMA=3;
 const LS='lockin-data';
 const LEGACY=['lockin-ledger-v1'];
-function setSave(on,txt){$('saveState').innerHTML=`<span class="dot${on?' on':''}"></span>${txt}`;}
+function setSave(kind,txt,link){$('saveState').innerHTML=`<span class="dot${kind===true?' on':kind?' '+kind:''}"></span>${txt}${link?'<button class="signin" data-signin="1">Sign in</button>':''}`;}
 function migrate(obj){
   if(!obj||typeof obj!=='object'||!Array.isArray(obj.habits))return null;
   const o=JSON.parse(JSON.stringify(obj));
@@ -659,20 +734,156 @@ function migrate(obj){
 }
 function applyData(o){state.habits=o.habits;state.months=o.months||{};state.trash=o.trash||[];}
 function snapshot(){return{app:'lockin',schema:SCHEMA,version:APP_VERSION,saved:new Date().toISOString(),habits:state.habits,months:state.months,trash:state.trash};}
-function save(){
+let storageBroken=false;
+function saveLocal(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{
-    try{localStorage.setItem(LS,JSON.stringify(snapshot()));setSave(true,'Saved on this phone');}
-    catch(e){setSave(false,'Not saved. Storage is blocked or full');}
+    try{localStorage.setItem(LS,JSON.stringify(snapshot()));storageBroken=false;}
+    catch(e){storageBroken=true;}
+    showStatus();
   },300);
 }
+function save(){ if(cloud&&user)cloud.push(); saveLocal(); }
+/* accounts: optional sign-in that syncs this ledger across devices (Firebase, loaded on demand from cloud.js) */
+const FIREBASE_CONFIG=(window.__lockinTest&&window.__lockinTest.config)||null;
+const OWNER_KEY='lockin-owner', EMAIL_KEY='lockin-email', GUEST_KEY='lockin-guest';
+const lsGet=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
+let cloud=null, cloudP=null, user=null, authKnown=false, syncStatus=null, syncing=false, authMode='in';
+function loadCloud(){
+  if(!FIREBASE_CONFIG)return Promise.reject(new Error('Accounts are not set up yet'));
+  if(!cloudP)cloudP=import('./cloud.js').then(m=>{cloud=m.init(FIREBASE_CONFIG,window.__lockinTest);cloud.onUser(onUser);return cloud;}).catch(e=>{cloudP=null;throw e;});
+  return cloudP;
+}
+function shape(H){return JSON.stringify((H||[]).map(h=>[h.id,h.name,+h.goal||0,(h.subs||[]).map(s=>[s.id,s.name])]));}
+function defaultState(){return{habits:JSON.parse(JSON.stringify(DEFAULT_HABITS)),months:{},trash:[]};}
+const appApi={
+  getState:()=>({habits:state.habits,months:state.months,trash:state.trash}),
+  setState(st){applyData(st);saveLocal();if(!editing)render();},
+  reset(){applyData(defaultState());saveLocal();render();},
+  hasData(){
+    const ticks=Object.values(state.months).some(m=>Object.values(m||{}).some(a=>(a||[]).length));
+    return ticks||(state.trash||[]).length>0||shape(state.habits)!==shape(DEFAULT_HABITS);
+  },
+  choose(){return new Promise(resolve=>openSheet({mode:'choice',resolve,modal:true,title:'Bring this device’s ticks?',
+    text:'Your account already has data, and this device has its own ticks from before you signed in.<br><br><b>Merge both</b> keeps everything from both. <b>Use account only</b> replaces this device’s data with your account.',
+    ok:'Merge both',cancel:'Use account only'}));},
+  status(s){syncStatus=s;showStatus();}
+};
+function startSync(){
+  if(!user||syncing)return; syncing=true;
+  cloud.startSync(user,appApi).catch(err=>{syncing=false;syncStatus={phase:'error',error:err};showStatus();});
+}
+addEventListener('online',()=>{if(user&&!syncing)startSync();});
+function onUser(u){
+  authKnown=true; user=u||null;
+  if(u){lsSet(EMAIL_KEY,u.email||'');hideAuth();startSync();}
+  else{syncing=false;syncStatus=null;if(lsGet(OWNER_KEY))showAuth(false,'You were signed out. Log in again to keep syncing.');}
+  updateAcct();showStatus();
+}
+function showStatus(){
+  if(storageBroken&&!user){setSave('err','Not saved. Storage is blocked or full');return;}
+  if(!FIREBASE_CONFIG){setSave(true,'Saved on this device');return;}
+  if(!user){
+    if(lsGet(OWNER_KEY)&&!authKnown){setSave('busy','Loading your account');return;}
+    setSave('warn','Not signed in · saved on this device only and could be lost',true);return;
+  }
+  const s=syncStatus||{phase:'linking'};
+  if(s.phase==='linking'||s.connecting)setSave('busy','Connecting your account');
+  else if(s.phase==='error'){const c=s.error&&s.error.code||'';
+    setSave('err',/permission/.test(c)?'Sync blocked by the database rules':!navigator.onLine||/unavailable|network/.test(c)?'Offline · saved here, syncs when you’re back online':'Couldn’t sync just now · saved on this device');
+    if(s.error)console.warn('Lock-In sync:',s.error);}
+  else if(s.offline||!navigator.onLine)setSave('warn','Offline · saved here, syncs when you’re back online');
+  else if(s.pending)setSave('busy','Syncing');
+  else setSave(true,'Synced · '+esc(user.email||''));
+}
+addEventListener('offline',showStatus);
+function updateAcct(){
+  const b=$('acctBtn'); if(!FIREBASE_CONFIG){b.hidden=true;return;} b.hidden=false;
+  if(user){const e=user.email||'?';b.className='acct';b.textContent=e.charAt(0);b.setAttribute('aria-label','Account: '+e);}
+  else{b.className='acct guest';b.textContent='Sign in';b.removeAttribute('aria-label');}
+}
+function setAuthMode(m){
+  authMode=m; const up=m==='up';
+  $('tabIn').setAttribute('aria-selected',!up); $('tabUp').setAttribute('aria-selected',up);
+  $('authGo').textContent=up?'Create account':'Log in';
+  $('authPw').setAttribute('autocomplete',up?'new-password':'current-password');
+  $('authPw').placeholder=up?'Choose a password':'Your password';
+  $('pwHint').hidden=!up; $('forgot').hidden=up; $('authErr').hidden=true; $('authOk').hidden=true;
+}
+function showAuth(firstRun,lead){
+  if(!FIREBASE_CONFIG)return;
+  $('authLead').textContent=lead||'Sign in to keep your ticks safe and in sync on every device you use.';
+  $('authClose').hidden=!!firstRun; $('guestBtn').hidden=!firstRun; $('guestNote').hidden=!firstRun; $('authOr').hidden=!firstRun;
+  setAuthMode(lsGet(OWNER_KEY)||lsGet(EMAIL_KEY)?'in':(firstRun?'up':'in'));
+  if(!$('authEmail').value)$('authEmail').value=lsGet(EMAIL_KEY)||'';
+  $('auth').hidden=false; document.documentElement.style.overflow='hidden';
+  loadCloud().catch(()=>{});
+}
+function hideAuth(){$('auth').hidden=true;document.documentElement.style.overflow='';$('authPw').value='';}
+const AUTH_ERR={
+  'auth/invalid-credential':'That email and password don’t match. Check them or reset your password.',
+  'auth/wrong-password':'That email and password don’t match. Check them or reset your password.',
+  'auth/user-not-found':'No account uses that email. Create one instead.',
+  'auth/invalid-email':'Enter a valid email address.',
+  'auth/missing-email':'Enter your email address.',
+  'auth/email-already-in-use':'That email already has an account. Log in instead.',
+  'auth/weak-password':'Choose a longer password, at least 8 characters.',
+  'auth/missing-password':'Enter your password.',
+  'auth/too-many-requests':'Too many tries. Wait a few minutes, then try again.',
+  'auth/network-request-failed':'No connection. Connect to the internet to sign in.',
+  'auth/user-disabled':'This account has been turned off.'
+};
+function authErr(msg){$('authOk').hidden=true;$('authErr').textContent=msg;$('authErr').hidden=false;}
+function busy(on,label){const g=$('authGo');g.disabled=on;g.textContent=on?label:(authMode==='up'?'Create account':'Log in');}
+$('tabIn').addEventListener('click',()=>setAuthMode('in'));
+$('tabUp').addEventListener('click',()=>setAuthMode('up'));
+$('pwShow').addEventListener('click',()=>{const i=$('authPw'),show=i.type==='password';i.type=show?'text':'password';$('pwShow').textContent=show?'Hide':'Show';$('pwShow').setAttribute('aria-label',show?'Hide password':'Show password');});
+$('authForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const email=$('authEmail').value.trim(), pw=$('authPw').value;
+  if(!/^\S+@\S+\.\S+$/.test(email)){authErr(AUTH_ERR['auth/invalid-email']);$('authEmail').focus();return;}
+  if(!pw){authErr(AUTH_ERR['auth/missing-password']);$('authPw').focus();return;}
+  if(authMode==='up'&&pw.length<8){authErr(AUTH_ERR['auth/weak-password']);$('authPw').focus();return;}
+  if(!navigator.onLine){authErr(AUTH_ERR['auth/network-request-failed']);return;}
+  $('authErr').hidden=true; busy(true,authMode==='up'?'Creating account…':'Logging in…');
+  try{const c=await loadCloud(); await (authMode==='up'?c.signUp(email,pw):c.signIn(email,pw)); lsSet(GUEST_KEY,'');}
+  catch(err){authErr(AUTH_ERR[err&&err.code]||'Something went wrong. Try again.');if(err&&!AUTH_ERR[err.code])console.warn(err);}
+  finally{busy(false);}
+});
+$('forgot').addEventListener('click',async()=>{
+  const email=$('authEmail').value.trim();
+  if(!/^\S+@\S+\.\S+$/.test(email)){authErr('Enter your email above, then tap Forgot password.');$('authEmail').focus();return;}
+  try{const c=await loadCloud();await c.reset(email);$('authErr').hidden=true;$('authOk').textContent='If '+email+' has an account, a reset link is on its way. Check your spam folder too.';$('authOk').hidden=false;}
+  catch(err){authErr(AUTH_ERR[err&&err.code]||'Couldn’t send the reset email. Try again.');}
+});
+$('guestBtn').addEventListener('click',()=>{lsSet(GUEST_KEY,'1');hideAuth();showStatus();toast('Saved on this device only');});
+$('authClose').addEventListener('click',hideAuth);
+$('acctBtn').addEventListener('click',()=>{
+  if(!user){showAuth(false);return;}
+  const s=syncStatus||{}, unsynced=s.pending||s.offline||!navigator.onLine;
+  openSheet({mode:'account',title:'Your account',ok:'Sign out',danger:true,cancel:'Close',
+    text:`Signed in as <b>${esc(user.email||'')}</b>. Your ticks sync to every phone and computer where you log in with this account.<br><br>${unsynced?'<b>Some changes haven’t synced yet.</b> Connect to the internet before signing out, or they’ll be lost.':'Signing out clears this device’s copy. Everything stays safe in your account.'}`});
+});
+$('saveState').addEventListener('click',e=>{if(e.target.closest('[data-signin]'))showAuth(false);});
+async function doSignOut(){
+  setSave('busy','Signing out');
+  try{if(cloud)await cloud.signOut();}catch(e){}
+  [LS,OWNER_KEY,EMAIL_KEY,GUEST_KEY,'lockin-base'].forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});
+  location.reload();
+}
+if(FIREBASE_CONFIG){
+  updateAcct();
+  if(lsGet(OWNER_KEY))loadCloud().catch(()=>{authKnown=true;showStatus();});
+  else if(lsGet(GUEST_KEY)!=='1')showAuth(true);
+}
+
 (function boot(){
   let raw=null;
   try{raw=localStorage.getItem(LS);if(!raw){for(const k of LEGACY){raw=localStorage.getItem(k);if(raw)break;}}}catch(e){}
   try{const o=migrate(JSON.parse(raw||'null'));if(o)applyData(o);}catch(e){}
   render();
-  setSave(!!raw,raw?'Saved on this phone':'Ready. Your ticks save on this phone');
-  if(raw)save();
+  if(raw)saveLocal(); else showStatus();
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}catch(e){}
 })();
 $('ver').textContent='v'+APP_VERSION;
