@@ -204,6 +204,8 @@ tr.addhabit td{height:52px;border-top:1px solid var(--line)}
 .eyebrow.ink{color:inherit;opacity:.8}
 .challeft{font-family:var(--mono);font-size:11.5px;background:var(--ink);color:var(--chalk);border-radius:999px;padding:4px 10px;white-space:nowrap}
 .chalname{font-family:var(--display);font-weight:900;font-size:26px;line-height:.95;text-transform:uppercase}
+.chalhow{font-size:13.5px;font-weight:500;margin-top:-4px}
+.chalcard.none .chalhow{display:none}
 .chalpips{display:flex;gap:6px}
 .chalpips i{flex:1;height:10px;border-radius:5px;border:1.5px dashed color-mix(in srgb,currentColor 45%,transparent)}
 .chalpips i.on{background:var(--ink);border:1.5px solid var(--ink)}
@@ -265,6 +267,13 @@ i.flame svg path{fill:var(--w5)}
 .hex b{position:relative;font-family:var(--display);font-weight:900;font-size:19px}
 .badge>span{font-size:12.5px;font-weight:600;line-height:1.2}
 .badge small{font-family:var(--mono);font-size:10.5px;color:var(--muted);line-height:1.3}
+.badge small.brule{font-family:var(--body);font-size:12px;color:#C9C5BD;line-height:1.3}
+.gloss{background:var(--panel);border:1px solid var(--line-soft);border-radius:12px;padding:12px 14px}
+.gloss summary{cursor:pointer;font-weight:600;font-size:14px}
+.gloss dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px 12px;margin:12px 0;font-size:13.5px}
+.gloss dt{font-weight:600}
+.gloss dd{margin:0;color:var(--muted)}
+.gloss p{font-size:13px}
 .badge.locked>span{color:var(--muted)}
 .strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .strip div{display:grid;justify-items:center;gap:4px}
@@ -470,6 +479,7 @@ i.flame svg path{fill:var(--w5)}
     <button class="chalcard" id="chalCard" aria-label="Weekly challenge details">
       <span class="chaltop"><span class="eyebrow ink">This week&#8217;s challenge</span><span class="challeft" id="chalLeft"></span></span>
       <b class="chalname" id="chalName">—</b>
+      <span class="chalhow" id="chalHow"></span>
       <span class="chalpips" id="chalPips"></span>
       <span class="chalfoot"><span id="chalReward">Reward +150 XP</span><span class="num" id="chalCount"></span></span>
     </button>
@@ -843,37 +853,48 @@ function buildGame(){
   let over=false; Object.keys(M).forEach(ym=>{H.forEach(h=>{const g=+h.goal||0;if(g>=2&&((M[ym]||{})[h.id]||[]).length>=Math.ceil(g*1.5))over=true;});});
   let hat=0,hatBest=0; chals.forEach(c=>{if(c.current&&!c.complete)return;if(c.complete){hat++;hatBest=Math.max(hatBest,hat);}else hat=0;});
   const hasSubs=H.some(h=>(h.subs||[]).length>=2);
-  const fam=(id,icon,unit,val,tiers,one,many,say)=>({id,icon,unit,val,tiers,family:true,one,many,say});
-  const sp=(id,icon,name,desc,got,opt)=>Object.assign({id,icon,name,desc,got:!!got},opt||{});
+  // every badge states its rule in plain words, using this person's own habit count
+  const nH=H.length, need=Math.ceil(nH/2);
+  const DEF={
+    streak:`A streak day is any day you tick at least ${need} of your ${nH} habits. Today counts as soon as you reach ${need}.`,
+    full:`A full day is a day you tick all ${nH} of your habits.`,
+    tick:`Every habit box you tick counts once. Exercise boxes inside a habit earn XP but don't count here.`,
+    goal:`Each habit has a goal of days per month, like Push day ${(H.find(h=>+h.goal>0)||{goal:9}).goal}. Reaching it in a month counts once. Ten habits can count ten times a month.`,
+    chal:`Each week has one challenge, shown on the green card. Finishing it before Sunday ends counts once.`
+  };
+  const gH=H.find(h=>+h.goal>=2), ovEx=gH?` For example, ${gH.name} on ${Math.ceil(gH.goal*1.5)} days when its goal is ${gH.goal}.`:'';
+  const fam=(id,icon,val,tiers,one,many,rule,def)=>({id,icon,val,tiers,family:true,one,many,rule,def});
+  const sp=(id,icon,name,short,rule,def,got,opt)=>Object.assign({id,icon,name,short,rule,def,got:!!got},opt||{});
   const families=[
-    fam('streak','flame','days',best,[[3,'Spark'],[7,'On Fire'],[30,'Unbreakable'],[100,'Iron Will']],'day of streak','days of streak','Best streak: '+best+(best===1?' day':' days')),
-    fam('ticks','stack','ticks',mainTicks,[[25,'Warm-Up'],[100,'Century'],[500,'Five Hundred'],[1000,'Thousand Club']],'tick','ticks',mainTicks+' habit ticks logged'),
-    fam('full','bolt','full days',fullDays,[[1,'Full Send'],[10,'Double Digits'],[30,'Machine'],[100,'Legend']],'full day','full days',fullDays+(fullDays===1?' full day':' full days')+' with every habit ticked'),
-    fam('goals','target','goals',goalsMet,[[1,'Bullseye'],[5,'Sharpshooter'],[20,'Sniper'],[50,'Dead Eye']],'goal','goals',goalsMet+' monthly '+(goalsMet===1?'goal':'goals')+' met'),
-    fam('chal','trophy','challenges',chalDone,[[1,'Challenger'],[5,'Contender'],[10,'Champion'],[25,'Undefeated']],'challenge','challenges',chalDone+' weekly '+(chalDone===1?'challenge':'challenges')+' done')
+    fam('streak','flame',best,[[3,'Spark'],[7,'On Fire'],[30,'Unbreakable'],[100,'Iron Will']],'streak day','streak days',t=>`${t} streak days in a row`,DEF.streak+' Your best run so far: '+best+'.'),
+    fam('ticks','stack',mainTicks,[[25,'Warm-Up'],[100,'Century'],[500,'Five Hundred'],[1000,'Thousand Club']],'habit tick','habit ticks',t=>`${t.toLocaleString('en')} habit ticks in total`,DEF.tick+' Your total: '+mainTicks+'.'),
+    fam('full','bolt',fullDays,[[1,'Full Send'],[10,'Double Digits'],[30,'Machine'],[100,'Legend']],'full day','full days',t=>t===1?'Your first full day':`${t} full days in total`,DEF.full+' Your total: '+fullDays+'.'),
+    fam('goals','target',goalsMet,[[1,'Bullseye'],[5,'Sharpshooter'],[20,'Sniper'],[50,'Dead Eye']],'monthly goal','monthly goals',t=>t===1?'Reach one monthly goal':`Reach ${t} monthly goals in total`,DEF.goal+' Your total: '+goalsMet+'.'),
+    fam('chal','trophy',chalDone,[[1,'Challenger'],[5,'Contender'],[10,'Champion'],[25,'Undefeated']],'challenge','challenges',t=>t===1?'Finish one weekly challenge':`Finish ${t} weekly challenges`,DEF.chal+' Finished so far: '+chalDone+'.')
   ].map(f=>{let lvl=0;f.tiers.forEach((t,k)=>{if(f.val>=t[0])lvl=k+1;});const nx=f.tiers[lvl]||null;
     return Object.assign(f,{lvl,got:lvl>0,name:lvl?f.tiers[lvl-1][1]:f.tiers[0][1],next:nx,
-      prog:nx?Math.min(1,f.val/nx[0]):1});});
+      short:f.rule(nx?nx[0]:f.tiers[3][0]),prog:nx?Math.min(1,f.val/nx[0]):1,progTxt:nx?`${Math.min(f.val,nx[0]).toLocaleString('en')} of ${nx[0].toLocaleString('en')}`:'All four tiers earned'});});
+  const pr=(v,t)=>({prog:Math.min(1,v/t),progTxt:Math.min(v,t)+' of '+t});
   const specials=[
-    sp('pweek','crown','Perfect Week','Every day Monday to Sunday at half your habits or more',bestWeek>=7,{prog:Math.min(1,bestWeek/7),hint:Math.min(bestWeek,7)+' / 7 days'}),
-    sp('sweep','sparkle','Clean Sweep','Seven full days in a row',bestFullRun>=7,{prog:Math.min(1,bestFullRun/7),hint:Math.min(bestFullRun,7)+' / 7 days'}),
-    sp('pmonth','calendar','Perfect Month','Every monthly goal met in one month',ironMonth,{hint:'every goal, one month'}),
-    sp('ice','snow','Ice Cold','A freeze saved your streak',frozen.length>0,{hint:'let a freeze save you'}),
-    sp('weekend','sun','Weekend Warrior','Full days on both Saturday and Sunday',weekend,{hint:'full Saturday and Sunday'}),
-    sp('over','rocket','Overachiever','150% of a monthly goal',over,{hint:'beat a goal by half again'}),
-    sp('hat','hat','Hat Trick','Three weekly challenges in a row',hatBest>=3,{prog:Math.min(1,hatBest/3),hint:Math.min(hatBest,3)+' / 3 in a row'}),
-    hPush&&hPull&&hLeg?sp('ppl','bars','Push Pull Legs','All three workout days in one week',ppl,{hint:'push, pull and legs, one week'}):null,
-    hLeg?sp('leg','legs','Never Skip Leg Day','Leg day every week for a month',legBest>=4,{prog:Math.min(1,legBest/4),hint:Math.min(legBest,4)+' / 4 weeks'}):null,
-    hasSubs?sp('set','layers','Full Set','Every item under a habit in one day',fullSet,{hint:'every item, one day'}):null,
-    sp('phoenix','phoenix','Phoenix','Back after a week off, then a 7-day streak',phoenix,{secret:true}),
-    sp('year','star','Year One','Logged in twelve different months',activeMonths.size>=12,{secret:true,prog:Math.min(1,activeMonths.size/12)})
+    sp('pweek','crown','Perfect Week','7 streak days in one week',`Have a streak day on all 7 days of one Monday–Sunday week.`,DEF.streak,bestWeek>=7,pr(bestWeek,7)),
+    sp('sweep','sparkle','Clean Sweep','7 full days in a row',`Have 7 full days in a row, ticking all ${nH} habits each day.`,DEF.full,bestFullRun>=7,pr(bestFullRun,7)),
+    sp('pmonth','calendar','Perfect Month','Every goal in one month',`Reach the monthly goal of every habit in the same calendar month.`,DEF.goal,ironMonth),
+    sp('ice','snow','Ice Cold','A freeze saves your streak',`Miss a streak day while you hold a freeze. The freeze covers the day and keeps your streak alive.`,'You earn a freeze for each Monday–Sunday week with 5 or more streak days, and can hold up to 3.',frozen.length>0),
+    sp('weekend','sun','Weekend Warrior','Full Saturday and Sunday',`Tick all ${nH} habits on a Saturday and on the Sunday right after it.`,DEF.full,weekend),
+    sp('over','rocket','Overachiever','1.5× a monthly goal',`Tick one habit on at least one and a half times its monthly goal in a single month.${ovEx}`,DEF.goal,over),
+    sp('hat','hat','Hat Trick','3 challenges in a row',`Finish the weekly challenge three weeks running.`,DEF.chal,hatBest>=3,pr(hatBest,3)),
+    hPush&&hPull&&hLeg?sp('ppl','bars','Push Pull Legs','All three in one week',`Tick ${hPush.name}, ${hPull.name} and ${hLeg.name} at least once each in the same Monday–Sunday week.`,'',ppl):null,
+    hLeg?sp('leg','legs','Never Skip Leg Day','Every week, 4 weeks running',`Tick ${hLeg.name} at least once a week, Monday to Sunday, for 4 weeks in a row.`,'',legBest>=4,pr(legBest,4)):null,
+    hasSubs?sp('set','layers','Full Set','Every exercise, same day',`Tick every exercise under one habit on the same day, like all of ${(H.find(h=>(h.subs||[]).length>=2)||{name:'Push day'}).name}'s.`,'',fullSet):null,
+    sp('phoenix','phoenix','Phoenix','It’s about coming back',`Come back after 7 or more days without a streak day, then build a 7-day streak.`,DEF.streak,phoenix,{secret:true}),
+    sp('year','star','Year One','It takes a while',`Have streak days in 12 different months.`,DEF.streak,activeMonths.size>=12,Object.assign({secret:true},pr(activeMonths.size,12)))
   ].filter(Boolean);
   const badges=families.concat(specials);
   const totalB=families.length*4+specials.length, earnedB=families.reduce((a,f)=>a+f.lvl,0)+specials.filter(b=>b.got).length;
   const unlocked=[]; families.forEach(f=>{for(let k=1;k<=f.lvl;k++)unlocked.push(f.id+':'+k);}); specials.forEach(b=>{if(b.got)unlocked.push(b.id);});
   // the badge you're closest to
-  const cand=[]; families.forEach(f=>{if(f.next){const n=f.next[0]-f.val;cand.push({b:f,name:f.next[1],prog:f.prog,hint:n+' more '+(n===1?f.one:f.many),tier:f.lvl});}});
-  specials.forEach(b=>{if(!b.got&&!b.secret&&b.prog!=null)cand.push({b,name:b.name,prog:b.prog,hint:b.hint,tier:-1});});
+  const cand=[]; families.forEach(f=>{if(f.next){const n=f.next[0]-f.val;cand.push({b:f,name:f.next[1],prog:f.prog,hint:f.rule(f.next[0])+' · '+n+' to go',tier:f.lvl});}});
+  specials.forEach(b=>{if(!b.got&&!b.secret&&b.prog!=null)cand.push({b,name:b.name,prog:b.prog,hint:b.short+' · '+b.progTxt,tier:-1});});
   cand.sort((a,b)=>b.prog-a.prog); const nextBadge=cand[0]||null;
   return{T,first,days,streak,best,freezes,frozen,xp,xpParts,fullDays,goalsMet,chalDone,
     level:Math.floor((1+Math.sqrt(1+xp/12.5))/2),rank:RANKS[ri],rankIndex:ri,next:nextR,
@@ -924,10 +945,10 @@ function medal(b,size,opts){
 }
 function pips(f){return `<span class="pips">${[0,1,2,3].map(k=>`<i style="${k<f.lvl?'background:'+TIERS[k][1]:''}"></i>`).join('')}</span>`;}
 function badgeCard(b){
-  if(b.family){const t=b.lvl?TIERS[b.lvl-1][0]:'Locked';
-    return `<button class="badge fam${b.got?'':' locked'}" data-bid="${b.id}">${medal(b,68)}<span>${esc(b.name)}</span>${pips(b)}<small>${b.next?`${t} · ${b.val} / ${b.next[0]} ${esc(b.unit)}`:'Diamond · maxed out'}</small></button>`;}
-  if(b.secret&&!b.got)return `<div class="badge locked secret">${medal(b,68)}<span>Secret</span><small>Keep going to find it</small></div>`;
-  return `<button class="badge${b.got?'':' locked'}" data-bid="${b.id}">${medal(b,68)}<span>${esc(b.name)}</span><small>${b.got?'Special · earned':esc(b.hint||'')}</small></button>`;
+  if(b.family){const t=b.lvl?TIERS[b.lvl-1][0]:'Not yet';
+    return `<button class="badge fam${b.got?'':' locked'}" data-bid="${b.id}">${medal(b,68)}<span>${esc(b.name)}</span>${pips(b)}<small class="brule">${b.next?(b.lvl?'Next: ':'')+esc(b.short):'Maxed out'}</small><small>${t} · ${esc(b.progTxt)}</small></button>`;}
+  if(b.secret&&!b.got)return `<button class="badge locked secret" data-bid="${b.id}">${medal(b,68)}<span>Secret</span><small class="brule">${esc(b.short)}</small><small>Tap for a hint</small></button>`;
+  return `<button class="badge${b.got?'':' locked'}" data-bid="${b.id}">${medal(b,68)}<span>${esc(b.name)}</span><small class="brule">${esc(b.short)}</small><small>${b.got?'Earned':b.progTxt?esc(b.progTxt):'Not yet'}</small></button>`;
 }
 
 function renderGame(){
@@ -942,10 +963,11 @@ function renderGame(){
     cc.className='chalcard'+(c.complete?' done':'');
     $('chalLeft').textContent=c.complete?'Done':left===1?'Last day':left+' days left';
     $('chalName').textContent=c.name;
+    $('chalHow').textContent=c.weekly?`Tick ${c.h.name} on ${c.target} different days by Sunday`:`Tick ${c.h.name} on ${c.target} different days by Sunday`;
     $('chalPips').innerHTML=Array.from({length:c.target},(_,i)=>`<i class="${i<c.done?'on':''}"></i>`).join('');
     $('chalReward').textContent=c.complete?'+150 XP earned':'Reward +150 XP';
     $('chalCount').textContent=Math.min(c.done,c.target)+' / '+c.target;
-  }else{cc.className='chalcard none';$('chalLeft').textContent='Starts soon';$('chalName').textContent='Tick a box';$('chalPips').innerHTML='';$('chalReward').textContent='Your first challenge appears after your first tick';$('chalCount').textContent='';}
+  }else{cc.className='chalcard none';$('chalLeft').textContent='Starts soon';$('chalName').textContent='Tick a box';$('chalHow').textContent='';$('chalPips').innerHTML='';$('chalReward').textContent='Your first challenge appears after your first tick';$('chalCount').textContent='';}
   $('badgeCount').textContent=g.earned+'/'+g.totalB;
   const nb=g.nextBadge, nx=$('nextBadge');
   if(nb){nx.hidden=false;nx.innerHTML=`${medal(nb.b,44,{tier:nb.tier>=0?nb.tier+1:0})}<span class="nbtext"><span class="eyebrow">Next badge</span><b>${esc(nb.name)}</b><span>${esc(nb.hint||'')}</span></span><span class="nbbar"><i style="width:${(nb.prog*100).toFixed(0)}%"></i></span>`;}
@@ -998,7 +1020,18 @@ function openLevel(){
 }
 function openBadges(){
   const g=G;
+  const n=state.habits.length, need=Math.ceil(n/2);
   openPanel('Badges · '+g.earned+' of '+g.totalB,`
+    <details class="gloss"><summary>How badges count</summary>
+      <dl>
+        <dt>Streak day</dt><dd>Any day you tick at least ${need} of your ${n} habits.</dd>
+        <dt>Full day</dt><dd>A day you tick all ${n} habits.</dd>
+        <dt>Habit tick</dt><dd>One habit box ticked. Exercise boxes earn XP but don't count toward badges.</dd>
+        <dt>Monthly goal</dt><dd>A habit reaching its days-per-month goal, the number after its name in Edit habits.</dd>
+        <dt>Week</dt><dd>Always Monday to Sunday.</dd>
+      </dl>
+      <p>Badges come from your ticks, so unticking a box can take one back. Tap any badge for its exact rule.</p>
+    </details>
     <span class="eyebrow">Level up · bronze, silver, gold, diamond</span>
     <div class="badges">${g.families.map(badgeCard).join('')}</div>
     <span class="eyebrow">Specials</span>
@@ -1006,14 +1039,22 @@ function openBadges(){
   $('panelBody').querySelectorAll('[data-bid]').forEach(el=>el.addEventListener('click',()=>{const b=g.badges.find(x=>x.id===el.dataset.bid);if(b)badgeInfo(b);}));
 }
 function badgeInfo(b){
+  let body;
   if(b.family){
-    openPanel(b.name,`<div class="binfo">${medal(b,120)}</div>
-      <p>${b.lvl?`<b>${TIERS[b.lvl-1][0]}</b>. ${esc(b.say)}.`:`Not earned yet. ${esc(b.say)}.`} ${b.next?`Next: <b>${esc(b.next[1])}</b> at ${b.next[0]}.`:'You\u2019ve maxed this one out.'}</p>
-      <ul class="chist">${b.tiers.map((t,k)=>`<li class="${k<b.lvl?'ok':''}"><span class="tdot" style="background:${TIERS[k][1]}"></span><div>${esc(t[1])}<span>${TIERS[k][0]} · ${t[0]} ${esc(b.unit)}</span></div><b>${k<b.lvl?'Earned':Math.min(b.val,t[0])+' / '+t[0]}</b></li>`).join('')}</ul>
-      <button class="btn" id="backBadges">All badges</button>`);
+    body=`<div class="binfo">${medal(b,120)}</div>
+      <p>${b.lvl?`You have <b>${TIERS[b.lvl-1][0]}</b>.`:'Not earned yet.'} ${b.next?`Next is <b>${esc(b.next[1])}</b>: ${esc(b.rule(b.next[0]).toLowerCase())}. You're on <b>${esc(b.progTxt)}</b>.`:'You’ve earned every tier.'}</p>
+      <span class="eyebrow">The four tiers</span>
+      <ul class="chist">${b.tiers.map((t,k)=>`<li class="${k<b.lvl?'ok':''}"><span class="tdot" style="background:${TIERS[k][1]}"></span><div>${esc(t[1])}<span>${TIERS[k][0]} · ${esc(b.rule(t[0]))}</span></div><b>${k<b.lvl?'Earned':Math.min(b.val,t[0]).toLocaleString('en')+' of '+t[0].toLocaleString('en')}</b></li>`).join('')}</ul>
+      <span class="eyebrow">What counts</span><p>${esc(b.def)}</p>`;
+  }else if(b.secret&&!b.got){
+    body=`<div class="binfo">${medal(b,120)}</div><p><b>Secret badge.</b> Hint: ${esc(b.short.toLowerCase())}. It shows its name and rule once you earn it.</p>`;
   }else{
-    openPanel(b.name,`<div class="binfo">${medal(b,120)}</div><p>${esc(b.desc)}. ${b.got?'<b>Earned.</b>':esc(b.hint||'')}</p><button class="btn" id="backBadges">All badges</button>`);
+    body=`<div class="binfo">${medal(b,120)}</div>
+      <span class="eyebrow">How to earn it</span><p>${esc(b.rule)}</p>
+      ${b.got?'<p><b>Earned.</b></p>':b.progTxt?`<p>Your best so far: <b>${esc(b.progTxt)}</b>.</p>`:''}
+      ${b.def?`<span class="eyebrow">What counts</span><p>${esc(b.def)}</p>`:''}`;
   }
+  openPanel(b.secret&&!b.got?'Secret':b.name,body+'<button class="btn" id="backBadges">All badges</button>');
   $('backBadges').addEventListener('click',openBadges);
 }
 /* unlock reveal: one badge at a time, full screen */
@@ -1035,7 +1076,7 @@ function nextReveal(){
   $('revMedal').innerHTML=medal(b,168,x.tier?{tier:x.tier}:{});
   $('revEyebrow').textContent=x.more?(x.more+1)+' new badges':'New badge · '+tierName+(rq.length?' · '+rq.length+' more':'');
   $('revName').textContent=name;
-  $('revText').textContent=(x.tier?`${TIERS[x.tier-1][0]} tier. ${b.say}.`:b.desc+'.')+(x.more?` Plus ${x.more} more waiting on your shelf.`:'');
+  $('revText').textContent=(x.tier?`${TIERS[x.tier-1][0]} tier: ${b.rule(b.tiers[x.tier-1][0]).toLowerCase()}.`:b.rule)+(x.more?` Plus ${x.more} more waiting on your shelf.`:'');
   $('revGo').textContent=x.more?'See them all':rq.length?'Next badge':'Nice';
   $('revGo').dataset.all=x.more?'1':'';
   $('revAll').hidden=!!x.more;
@@ -1050,7 +1091,7 @@ function openStreak(){
   const g=G, last=[];
   for(let i=13;i>=0;i--){const dt=plus(g.T,-i),x=g.days.find(d=>+d.dt===+dt);last.push({dt,on:x&&x.logged,frz:x&&x.frozen});}
   openPanel(g.streak+'-day streak',`
-    <p>Days at <b>half your habits or more</b>. Best ever: <b>${g.best} ${g.best===1?'day':'days'}</b>. Today doesn't count against you until it's over.</p>
+    <p>A <b>streak day</b> is any day you tick at least <b>${Math.ceil(state.habits.length/2)} of your ${state.habits.length} habits</b>. Best run ever: <b>${g.best} ${g.best===1?'day':'days'}</b>. Today doesn't count against you until it's over.</p>
     <span class="eyebrow">Last 14 days</span>
     <div class="strip">${last.map(d=>`<div><i class="${d.frz?'frz':d.on?'on':''}">${d.frz?snowSvg(16):''}</i><span>${d.dt.getDate()}</span></div>`).join('')}</div>
     <span class="eyebrow">Freezes · ${g.freezes} of 3</span>
