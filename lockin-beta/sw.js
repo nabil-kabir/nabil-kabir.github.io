@@ -1,6 +1,6 @@
 /* Lock-In service worker.
    To ship an update: change the app files, bump VERSION here and APP_VERSION in index.html. */
-const VERSION = '2.1.0';
+const VERSION = '2.1.0-b2';
 const CACHE = 'lockinbeta-' + VERSION;
 const FONTS = 'lockinbeta-fonts';
 const CORE = [
