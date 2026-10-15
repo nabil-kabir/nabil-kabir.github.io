@@ -834,7 +834,13 @@ const AUTH_ERR={
   'auth/missing-password':'Enter your password.',
   'auth/too-many-requests':'Too many tries. Wait a few minutes, then try again.',
   'auth/network-request-failed':'No connection. Connect to the internet to sign in.',
-  'auth/user-disabled':'This account has been turned off.'
+  'auth/user-disabled':'This account has been turned off.',
+  'auth/operation-not-allowed':'Email sign-in isn\u2019t switched on yet. In Firebase, turn on Authentication \u2192 Sign-in method \u2192 Email/Password.',
+  'auth/configuration-not-found':'Sign-in isn\u2019t set up yet. In Firebase, open Authentication and click Get started, then turn on Email/Password.',
+  'auth/admin-restricted-operation':'New sign-ups are turned off for this app in Firebase.',
+  'auth/invalid-api-key':'The app\u2019s Firebase key isn\u2019t valid. Check the config in index.html.',
+  'auth/api-key-not-valid.-please-pass-a-valid-api-key.':'The app\u2019s Firebase key isn\u2019t valid. Check the config in index.html.',
+  'auth/unauthorized-domain':'This website isn\u2019t on Firebase\u2019s list of authorized domains yet.'
 };
 function authErr(msg){$('authOk').hidden=true;$('authErr').textContent=msg;$('authErr').hidden=false;}
 function busy(on,label){const g=$('authGo');g.disabled=on;g.textContent=on?label:(authMode==='up'?'Create account':'Log in');}
@@ -850,7 +856,7 @@ $('authForm').addEventListener('submit',async e=>{
   if(!navigator.onLine){authErr(AUTH_ERR['auth/network-request-failed']);return;}
   $('authErr').hidden=true; busy(true,authMode==='up'?'Creating account…':'Logging in…');
   try{const c=await loadCloud(); await (authMode==='up'?c.signUp(email,pw):c.signIn(email,pw)); lsSet(GUEST_KEY,'');}
-  catch(err){authErr(AUTH_ERR[err&&err.code]||'Something went wrong. Try again.');if(err&&!AUTH_ERR[err.code])console.warn(err);}
+  catch(err){authErr(AUTH_ERR[err&&err.code]||('Something went wrong. Try again.'+(err&&err.code?' ('+err.code+')':'')));if(err&&!AUTH_ERR[err.code])console.warn(err);}
   finally{busy(false);}
 });
 $('forgot').addEventListener('click',async()=>{
