@@ -232,6 +232,33 @@ i.flame svg path{fill:var(--w5)}
 .ladder span{font-family:var(--mono);font-size:10px;color:var(--muted)}
 .ladder .on b{color:var(--chalk)}
 .badges{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.badge{font:inherit;color:inherit;cursor:pointer;transition:border-color .2s,transform .15s}
+.badge:hover{border-color:var(--line)}
+.badge:not(.locked) .medal{filter:drop-shadow(0 6px 14px rgba(0,0,0,.45))}
+.badge.secret{cursor:default}
+.pips{display:flex;gap:4px;justify-content:center}
+.pips i{width:12px;height:5px;border-radius:3px;background:var(--line)}
+.binfo{display:grid;place-items:center;padding:6px 0}
+.tdot{width:12px;height:12px;border-radius:50%;flex:none}
+.nextbadge{grid-column:1/-1;display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r);padding:10px 16px 10px 10px;text-align:left;flex-wrap:wrap}
+.nextbadge:hover{border-color:var(--line)}
+.nbtext{display:grid;gap:1px;flex:1;min-width:150px}
+.nbtext b{font-family:var(--display);font-weight:800;font-size:20px;text-transform:uppercase;letter-spacing:.02em;line-height:1.1}
+.nbtext>span:last-child{font-size:12.5px;color:var(--muted)}
+.nbbar{flex:1 1 140px;height:6px;border-radius:3px;background:var(--raised);overflow:hidden;max-width:260px}
+.nbbar i{display:block;height:100%;background:var(--chalk);border-radius:3px}
+.reveal{position:fixed;inset:0;z-index:76;background:radial-gradient(60% 45% at 50% 38%,color-mix(in srgb,var(--glow,#8B7CF6) 26%,transparent),transparent 70%),color-mix(in srgb,var(--ink) 97%,transparent);display:grid;align-content:center;justify-items:center;gap:30px;padding:24px 16px calc(28px + env(safe-area-inset-bottom,0px));overflow:hidden}
+.revrays{position:absolute;left:50%;top:38%;width:760px;height:760px;margin:-380px 0 0 -380px;background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--glow,#8B7CF6) 16%,transparent) 0deg 8deg,transparent 8deg 22deg);border-radius:50%;-webkit-mask:radial-gradient(circle,#000 18%,transparent 62%);mask:radial-gradient(circle,#000 18%,transparent 62%);animation:spin 24s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.revbox{position:relative;display:grid;justify-items:center;gap:14px;text-align:center;max-width:360px}
+.revmedal .medal{filter:drop-shadow(0 18px 40px rgba(0,0,0,.55))}
+.revmedal.pop{animation:pop .7s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes pop{0%{transform:scale(.3) rotate(-30deg);opacity:0}60%{opacity:1}100%{transform:none}}
+.reveal h2{font-family:var(--display);font-weight:900;font-size:clamp(52px,15vw,84px);line-height:.85;text-transform:uppercase;margin:0}
+.reveal p{margin:0;color:var(--muted);font-size:16px}
+.revact{display:flex;gap:10px;position:relative;width:min(360px,100%)}
+.revact .btn{flex:1;padding:13px}
+@media (prefers-reduced-motion:reduce){.revrays{animation:none}.revmedal.pop{animation:none}}
 .badge{background:var(--panel);border:1px solid var(--line-soft);border-radius:14px;padding:12px 6px 10px;display:grid;justify-items:center;gap:6px;text-align:center}
 .hex{width:52px;height:52px;position:relative;display:grid;place-items:center}
 .hex svg{position:absolute;inset:0}
@@ -447,9 +474,10 @@ i.flame svg path{fill:var(--w5)}
       <span class="chalfoot"><span id="chalReward">Reward +150 XP</span><span class="num" id="chalCount"></span></span>
     </button>
     <div class="gamebar">
-      <button class="chip" id="badgeBtn">Badges <span class="num" id="badgeCount">0/12</span></button>
+      <button class="chip" id="badgeBtn">Badges <span class="num" id="badgeCount"></span></button>
       <button class="chip" id="recapBtn">Monthly recap</button>
     </div>
+    <button class="nextbadge" id="nextBadge" hidden aria-label="See badges"></button>
   </section>
 
   <section class="bin" id="binSec" hidden aria-label="Removed rows">
@@ -500,6 +528,17 @@ i.flame svg path{fill:var(--w5)}
       <div class="panelhead"><h4 id="panelTitle"></h4><button class="mini closex" id="panelClose" aria-label="Close"><svg width="12" height="12" viewBox="0 0 14 14"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
       <div id="panelBody" class="panelbody"></div>
     </div>
+  </div>
+
+  <div class="reveal" id="reveal" hidden role="dialog" aria-modal="true" aria-labelledby="revName">
+    <div class="revrays" aria-hidden="true"></div>
+    <div class="revbox">
+      <div class="revmedal" id="revMedal"></div>
+      <span class="eyebrow" id="revEyebrow">New badge</span>
+      <h2 id="revName"></h2>
+      <p id="revText"></p>
+    </div>
+    <div class="revact"><button class="btn" id="revAll">All badges</button><button class="btn go" id="revGo">Nice</button></div>
   </div>
 
   <div class="fx" id="fx" hidden role="dialog" aria-modal="true" aria-labelledby="fxTitle">
@@ -729,18 +768,21 @@ function buildGame(){
     Object.keys(m).forEach(id=>{(m[id]||[]).forEach(d=>{anyTick=true;const dt=noon(y,mo-1,d);if(dt<=T&&(!first||dt<first))first=dt;
       if(mainIds.has(id)){tickXP+=XP.tick;mainTicks++;}else tickXP+=XP.sub;});});});
   // walk every day from the first tick to today
-  const days=[]; let streak=0,best=0,freezes=0,weekLogged=0,weekRun=0,bestWeek=0,gap=0,seenLog=false,comeback=false,fullSet=false;
+  const days=[]; let streak=0,best=0,freezes=0,weekLogged=0,weekRun=0,bestWeek=0,gap=0,seenLog=false,comeback=false,fullSet=false,fullRun=0,bestFullRun=0,phoenixArmed=false,phoenix=false,weekend=false,satFull=false;
   const frozen=[];
   if(first&&H.length){
     for(let dt=new Date(first);dt<=T;dt=plus(dt,1)){
       if(monIdx(dt)===0){weekLogged=0;weekRun=0;}
       const c=H.filter(h=>has(h.id,dt)).length, p=c/H.length, logged=p>=.5, full=c===H.length, today=+dt===+T;
       if(logged){streak++;best=Math.max(best,streak);weekLogged++;weekRun++;bestWeek=Math.max(bestWeek,weekRun);
-        if(seenLog&&gap>=3)comeback=true; seenLog=true; gap=0;}
+        if(seenLog&&gap>=3)comeback=true; if(seenLog&&gap>=7)phoenixArmed=true; seenLog=true; gap=0;
+        if(phoenixArmed&&streak>=7)phoenix=true;}
       else if(!today){weekRun=0;gap++;
         if(streak>0&&freezes>0){freezes--;frozen.push(dayId(dt));}else streak=0;}
       if(!fullSet)H.forEach(h=>{if((h.subs||[]).length>=2&&h.subs.every(s=>has(s.id,dt)))fullSet=true;});
       if(monIdx(dt)===6&&!today&&weekLogged>=5)freezes=Math.min(3,freezes+1);
+      if(full){fullRun++;bestFullRun=Math.max(bestFullRun,fullRun);}else if(!today)fullRun=0;
+      if(dt.getDay()===6)satFull=full; else if(dt.getDay()===0){if(satFull&&full)weekend=true;satFull=false;}
       days.push({dt,p,logged,full,frozen:frozen[frozen.length-1]===dayId(dt)});
     }
   }
@@ -790,31 +832,103 @@ function buildGame(){
       hs[h.id]={cur,best:b,risk:cur>0&&!has(h.id,T),weekly:false,label:String(cur)};
     }
   });
-  const B=(id,sym,name,got,prog)=>({id,sym,name,got:!!got,prog});
-  const badges=[
-    B('first','1','First tick',anyTick,'tick any box'),
-    B('full','F','Full day',fullDays>0,'every habit in one day'),
-    B('s7','7','7-day streak',best>=7,Math.min(best,7)+' / 7 days'),
-    B('week','W','Perfect week',bestWeek>=7,Math.min(bestWeek,7)+' / 7 days, Mon–Sun'),
-    B('set','S','Full set',fullSet,'every item of a habit, one day'),
-    B('goal','G','Goal crusher',goalsMet>0,'meet a monthly goal'),
-    B('back','C','Comeback',comeback,'log again after 3 days off'),
-    B('s30','30','30-day streak',best>=30,Math.min(best,30)+' / 30 days'),
-    B('c100','100','Century',mainTicks>=100,Math.min(mainTicks,100)+' / 100 ticks'),
-    B('month','M','Iron month',ironMonth,'every goal in one month'),
-    B('chal','X','Challenger',chalDone>=3,Math.min(chalDone,3)+' / 3 challenges'),
-    B('year','Y','Twelve months',activeMonths.size>=12,Math.min(activeMonths.size,12)+' / 12 months')
-  ];
+  // badges: five families that level up through four tiers, plus specials (two of them secret)
+  const weekHas=(id,ws)=>{for(let k=0;k<7;k++)if(has(id,plus(ws,k)))return true;return false;};
+  const findH=re=>H.find(h=>re.test(h.name));
+  const hPush=findH(/push/i),hPull=findH(/pull/i),hLeg=findH(/\bleg/i);
+  let ppl=false,legRun=0,legBest=0;
+  if(first){for(let ws=weekOf(first);ws<=T;ws=plus(ws,7)){
+    if(hPush&&hPull&&hLeg&&weekHas(hPush.id,ws)&&weekHas(hPull.id,ws)&&weekHas(hLeg.id,ws))ppl=true;
+    if(hLeg){if(weekHas(hLeg.id,ws)){legRun++;legBest=Math.max(legBest,legRun);}else if(+ws!==+weekOf(T))legRun=0;}}}
+  let over=false; Object.keys(M).forEach(ym=>{H.forEach(h=>{const g=+h.goal||0;if(g>=2&&((M[ym]||{})[h.id]||[]).length>=Math.ceil(g*1.5))over=true;});});
+  let hat=0,hatBest=0; chals.forEach(c=>{if(c.current&&!c.complete)return;if(c.complete){hat++;hatBest=Math.max(hatBest,hat);}else hat=0;});
+  const hasSubs=H.some(h=>(h.subs||[]).length>=2);
+  const fam=(id,icon,unit,val,tiers,one,many,say)=>({id,icon,unit,val,tiers,family:true,one,many,say});
+  const sp=(id,icon,name,desc,got,opt)=>Object.assign({id,icon,name,desc,got:!!got},opt||{});
+  const families=[
+    fam('streak','flame','days',best,[[3,'Spark'],[7,'On Fire'],[30,'Unbreakable'],[100,'Iron Will']],'day of streak','days of streak','Best streak: '+best+(best===1?' day':' days')),
+    fam('ticks','stack','ticks',mainTicks,[[25,'Warm-Up'],[100,'Century'],[500,'Five Hundred'],[1000,'Thousand Club']],'tick','ticks',mainTicks+' habit ticks logged'),
+    fam('full','bolt','full days',fullDays,[[1,'Full Send'],[10,'Double Digits'],[30,'Machine'],[100,'Legend']],'full day','full days',fullDays+(fullDays===1?' full day':' full days')+' with every habit ticked'),
+    fam('goals','target','goals',goalsMet,[[1,'Bullseye'],[5,'Sharpshooter'],[20,'Sniper'],[50,'Dead Eye']],'goal','goals',goalsMet+' monthly '+(goalsMet===1?'goal':'goals')+' met'),
+    fam('chal','trophy','challenges',chalDone,[[1,'Challenger'],[5,'Contender'],[10,'Champion'],[25,'Undefeated']],'challenge','challenges',chalDone+' weekly '+(chalDone===1?'challenge':'challenges')+' done')
+  ].map(f=>{let lvl=0;f.tiers.forEach((t,k)=>{if(f.val>=t[0])lvl=k+1;});const nx=f.tiers[lvl]||null;
+    return Object.assign(f,{lvl,got:lvl>0,name:lvl?f.tiers[lvl-1][1]:f.tiers[0][1],next:nx,
+      prog:nx?Math.min(1,f.val/nx[0]):1});});
+  const specials=[
+    sp('pweek','crown','Perfect Week','Every day Monday to Sunday at half your habits or more',bestWeek>=7,{prog:Math.min(1,bestWeek/7),hint:Math.min(bestWeek,7)+' / 7 days'}),
+    sp('sweep','sparkle','Clean Sweep','Seven full days in a row',bestFullRun>=7,{prog:Math.min(1,bestFullRun/7),hint:Math.min(bestFullRun,7)+' / 7 days'}),
+    sp('pmonth','calendar','Perfect Month','Every monthly goal met in one month',ironMonth,{hint:'every goal, one month'}),
+    sp('ice','snow','Ice Cold','A freeze saved your streak',frozen.length>0,{hint:'let a freeze save you'}),
+    sp('weekend','sun','Weekend Warrior','Full days on both Saturday and Sunday',weekend,{hint:'full Saturday and Sunday'}),
+    sp('over','rocket','Overachiever','150% of a monthly goal',over,{hint:'beat a goal by half again'}),
+    sp('hat','hat','Hat Trick','Three weekly challenges in a row',hatBest>=3,{prog:Math.min(1,hatBest/3),hint:Math.min(hatBest,3)+' / 3 in a row'}),
+    hPush&&hPull&&hLeg?sp('ppl','bars','Push Pull Legs','All three workout days in one week',ppl,{hint:'push, pull and legs, one week'}):null,
+    hLeg?sp('leg','legs','Never Skip Leg Day','Leg day every week for a month',legBest>=4,{prog:Math.min(1,legBest/4),hint:Math.min(legBest,4)+' / 4 weeks'}):null,
+    hasSubs?sp('set','layers','Full Set','Every item under a habit in one day',fullSet,{hint:'every item, one day'}):null,
+    sp('phoenix','phoenix','Phoenix','Back after a week off, then a 7-day streak',phoenix,{secret:true}),
+    sp('year','star','Year One','Logged in twelve different months',activeMonths.size>=12,{secret:true,prog:Math.min(1,activeMonths.size/12)})
+  ].filter(Boolean);
+  const badges=families.concat(specials);
+  const totalB=families.length*4+specials.length, earnedB=families.reduce((a,f)=>a+f.lvl,0)+specials.filter(b=>b.got).length;
+  const unlocked=[]; families.forEach(f=>{for(let k=1;k<=f.lvl;k++)unlocked.push(f.id+':'+k);}); specials.forEach(b=>{if(b.got)unlocked.push(b.id);});
+  // the badge you're closest to
+  const cand=[]; families.forEach(f=>{if(f.next){const n=f.next[0]-f.val;cand.push({b:f,name:f.next[1],prog:f.prog,hint:n+' more '+(n===1?f.one:f.many),tier:f.lvl});}});
+  specials.forEach(b=>{if(!b.got&&!b.secret&&b.prog!=null)cand.push({b,name:b.name,prog:b.prog,hint:b.hint,tier:-1});});
+  cand.sort((a,b)=>b.prog-a.prog); const nextBadge=cand[0]||null;
   return{T,first,days,streak,best,freezes,frozen,xp,xpParts,fullDays,goalsMet,chalDone,
     level:Math.floor((1+Math.sqrt(1+xp/12.5))/2),rank:RANKS[ri],rankIndex:ri,next:nextR,
     prog:nextR?(xp-RANKS[ri][1])/(nextR[1]-RANKS[ri][1]):1,
-    hs,badges,earned:badges.filter(b=>b.got).length,chals,chal:chals.find(c=>c.current)||null};
+    hs,badges,families,specials,earned:earnedB,totalB,unlocked,nextBadge,chals,chal:chals.find(c=>c.current)||null};
 }
 
 const flameSvg='<svg width="12" height="14" viewBox="0 0 16 18" aria-hidden="true"><path d="M8 1c1 3.2 5 5 5 9.3A5 5 0 0 1 3 10.3C3 8 4.4 6.6 5.4 5.6 5.6 7.5 6.6 8.4 7.4 8.6 7 6 7.4 3.4 8 1Z"/></svg>';
 const snowSvg=(s,c)=>`<svg width="${s}" height="${s}" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 2v16M3.1 6l13.8 8M3.1 14l13.8-8M7.5 3.5 10 6l2.5-2.5M7.5 16.5 10 14l2.5 2.5" stroke="${c||'#0A0C11'}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const hexHtml=(b,i)=>{const fill=b.got?BCOL[i%5]:'#171B24',edge=b.got?fill:'#2A3040',ink=b.got?'#0A0C11':'#8C92A2';
-  return `<span class="hex"><svg width="52" height="52" viewBox="0 0 52 52"><path d="M26 3 46 14.5v23L26 49 6 37.5v-23Z" fill="${fill}" stroke="${edge}" stroke-width="1.5"/></svg><b style="color:${ink}">${esc(b.sym)}</b></span>`;};
+const TIERS=[['Bronze','#F2B27A','#9C5A2C'],['Silver','#F4F6FA','#8F99AD'],['Gold','#FFE494','#C98F1E'],['Diamond','#C9F7FF','#8B7CF6']];
+const SPEC={pweek:['#8B7CF6','#4E9BF5'],sweep:['#2EC4A0','#4E9BF5'],pmonth:['#F0A94A','#EC5F93'],ice:['#C9F7FF','#4E9BF5'],weekend:['#FFE494','#F0A94A'],
+  over:['#EC5F93','#8B7CF6'],hat:['#2EC4A0','#8B7CF6'],ppl:['#4E9BF5','#2EC4A0'],leg:['#F0A94A','#2EC4A0'],set:['#8B7CF6','#EC5F93'],phoenix:['#F0A94A','#EC5F93'],year:['#FFE494','#8B7CF6']};
+const ICONS={
+  flame:'<path d="M12 2.5c1.6 4.2 6.5 6.2 6.5 11.6a6.5 6.5 0 0 1-13 0c0-3.2 1.9-5 3.2-6.3.3 2.6 1.6 3.8 2.8 4.1C11 8.6 11.2 5.6 12 2.5Z" fill="C"/>',
+  stack:'<path d="m4 7.5 3 3 6-6M4 13.5l3 3 6-6M4 19.5l3 3" stroke="C" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 7h5M15 13h5M11 19h9" stroke="C" stroke-width="2.2" stroke-linecap="round"/>',
+  bolt:'<path d="M13.5 2 4.5 13.5h6.5L10 22l9.5-12h-6.8l.8-8Z" fill="C"/>',
+  target:'<circle cx="12" cy="12" r="9" stroke="C" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="5" stroke="C" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="1.8" fill="C"/>',
+  trophy:'<path d="M7 3.5h10v5a5 5 0 0 1-10 0v-5Z" fill="C"/><path d="M7 5.5H4.2a3 3 0 0 0 3.3 4M17 5.5h2.8a3 3 0 0 1-3.3 4M12 13.5v4M8 20.5h8" stroke="C" stroke-width="2" fill="none" stroke-linecap="round"/>',
+  crown:'<path d="M3 8.5 7.5 12 12 5l4.5 7L21 8.5 19 18.5H5L3 8.5Z" fill="C"/><path d="M5 21h14" stroke="C" stroke-width="2" stroke-linecap="round"/>',
+  sparkle:'<path d="M11 2.5 13 9l6.5 2L13 13l-2 6.5L9 13l-6.5-2L9 9l2-6.5Z" fill="C"/><path d="M19 15.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9.9-2.6Z" fill="C"/>',
+  calendar:'<rect x="3.5" y="5" width="17" height="15.5" rx="3" stroke="C" stroke-width="2" fill="none"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="C" stroke-width="2" stroke-linecap="round"/><path d="m8.5 15 2.3 2.2L15.5 13" stroke="C" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  snow:'<path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 3.5l3 3 3-3M9 20.5l3-3 3 3" stroke="C" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  sun:'<circle cx="12" cy="12" r="4.5" fill="C"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" stroke="C" stroke-width="2" stroke-linecap="round"/>',
+  rocket:'<path d="M12 2.5c3.8 2.8 5 7.6 3.2 12.5H8.8C7 10.1 8.2 5.3 12 2.5Z" fill="C"/><path d="M8.8 13.5 6 16.5v3.5l3.5-2M15.2 13.5l2.8 3v3.5l-3.5-2M12 18v3" stroke="C" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  hat:'<path d="M3 17c3-1 6-1.5 9-1.5S18 16 21 17" stroke="C" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M7 15.5 8 6l4 3 4-3 1 9.5" fill="C"/>',
+  bars:'<path d="M5 20v-6M12 20V9M19 20V4" stroke="C" stroke-width="3.2" stroke-linecap="round"/>',
+  legs:'<path d="M5 13.5 12 6.5l7 7M5 19.5l7-7 7 7" stroke="C" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  layers:'<path d="M12 3 3 8l9 5 9-5-9-5Z" fill="C"/><path d="m3 12.5 9 5 9-5M3 16.5l9 5 9-5" stroke="C" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  phoenix:'<path d="M12 21c-4 0-6.5-2.6-6.5-6 0-2.4 1.3-4 2.5-5 .2 2 1.2 3 2.2 3.2C9.6 10 10.4 7 12 4.5c1.6 2.5 2.4 5.5 1.8 8.7 1-.2 2-1.2 2.2-3.2 1.2 1 2.5 2.6 2.5 5 0 3.4-2.5 6-6.5 6Z" fill="C"/><path d="M2.5 8.5c2 .2 3.4-.6 4.5-2M21.5 8.5c-2 .2-3.4-.6-4.5-2" stroke="C" stroke-width="1.8" fill="none" stroke-linecap="round"/>',
+  star:'<path d="m12 2.8 2.8 5.8 6.4.9-4.6 4.5 1.1 6.4L12 17.4l-5.7 3 1.1-6.4-4.6-4.5 6.4-.9L12 2.8Z" fill="C"/>',
+  q:'<path d="M9 9a3 3 0 1 1 4.2 2.8c-.8.4-1.2 1-1.2 1.9v.8" stroke="C" stroke-width="2.4" fill="none" stroke-linecap="round"/><circle cx="12" cy="18.5" r="1.4" fill="C"/>'
+};
+let medalN=0;
+function medal(b,size,opts){
+  opts=opts||{}; const id='md'+(++medalN), s=size||64;
+  const tier=b.family?(opts.tier!=null?opts.tier:b.lvl):0;
+  const got=opts.tier!=null?true:b.got;
+  const pal=b.family?TIERS[Math.max(0,tier-1)]:[null].concat(SPEC[b.id]||['#8B7CF6','#4E9BF5']);
+  const c1=b.family?pal[1]:pal[1], c2=b.family?pal[2]:pal[2];
+  const secret=b.secret&&!got, icon=ICONS[secret?'q':b.icon]||ICONS.star;
+  const ring=!got&&b.prog!=null&&!secret?`<circle cx="32" cy="32" r="30" fill="none" stroke="${b.family?TIERS[Math.min(3,b.lvl)][2]:c1}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${(188.5*Math.max(.02,b.prog)).toFixed(1)} 188.5" transform="rotate(-90 32 32)"/>`:'';
+  const face=got
+    ?`<circle cx="32" cy="32" r="28" fill="url(#${id})"/><circle cx="32" cy="32" r="23.5" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.2"/><path d="M14 22a20 20 0 0 1 22-12" stroke="rgba(255,255,255,.55)" stroke-width="2.2" fill="none" stroke-linecap="round"/>`
+    :`<circle cx="32" cy="32" r="28" fill="#141821" stroke="#262C3A" stroke-width="1.5"/>`;
+  const ink=got?'#0A0C11':'#4A5163';
+  return `<svg class="medal" width="${s}" height="${s}" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>`+
+    `<circle cx="32" cy="32" r="30" fill="none" stroke="#1E2330" stroke-width="3"/>${ring}${face}<g transform="translate(20 20)">${icon.replace(/="C"/g,'="'+ink+'"')}</g></svg>`;
+}
+function pips(f){return `<span class="pips">${[0,1,2,3].map(k=>`<i style="${k<f.lvl?'background:'+TIERS[k][1]:''}"></i>`).join('')}</span>`;}
+function badgeCard(b){
+  if(b.family){const t=b.lvl?TIERS[b.lvl-1][0]:'Locked';
+    return `<button class="badge fam${b.got?'':' locked'}" data-bid="${b.id}">${medal(b,68)}<span>${esc(b.name)}</span>${pips(b)}<small>${b.next?`${t} · ${b.val} / ${b.next[0]} ${esc(b.unit)}`:'Diamond · maxed out'}</small></button>`;}
+  if(b.secret&&!b.got)return `<div class="badge locked secret">${medal(b,68)}<span>Secret</span><small>Keep going to find it</small></div>`;
+  return `<button class="badge${b.got?'':' locked'}" data-bid="${b.id}">${medal(b,68)}<span>${esc(b.name)}</span><small>${b.got?'Special · earned':esc(b.hint||'')}</small></button>`;
+}
 
 function renderGame(){
   const g=G, show=state.habits.length>0;
@@ -832,7 +946,10 @@ function renderGame(){
     $('chalReward').textContent=c.complete?'+150 XP earned':'Reward +150 XP';
     $('chalCount').textContent=Math.min(c.done,c.target)+' / '+c.target;
   }else{cc.className='chalcard none';$('chalLeft').textContent='Starts soon';$('chalName').textContent='Tick a box';$('chalPips').innerHTML='';$('chalReward').textContent='Your first challenge appears after your first tick';$('chalCount').textContent='';}
-  $('badgeCount').textContent=g.earned+'/'+g.badges.length;
+  $('badgeCount').textContent=g.earned+'/'+g.totalB;
+  const nb=g.nextBadge, nx=$('nextBadge');
+  if(nb){nx.hidden=false;nx.innerHTML=`${medal(nb.b,44,{tier:nb.tier>=0?nb.tier+1:0})}<span class="nbtext"><span class="eyebrow">Next badge</span><b>${esc(nb.name)}</b><span>${esc(nb.hint||'')}</span></span><span class="nbbar"><i style="width:${(nb.prog*100).toFixed(0)}%"></i></span>`;}
+  else nx.hidden=true;
   $('sStreak').innerHTML=g.streak+'<small>'+(g.streak===1?'day':'days')+'</small>';
   $('sStreakSub').innerHTML=`${snowSvg(12,'#9CC8FA')} ${g.freezes} ${g.freezes===1?'freeze':'freezes'} · best ${g.best}`;
   renderRecapBanner();
@@ -840,13 +957,12 @@ function renderGame(){
 
 function checkUnlocks(){
   const g=G; if(!g||!state.habits.length)return;
-  const earned=g.badges.filter(b=>b.got).map(b=>b.id);
-  let seen=lsJ('lockinbeta-seen-badges',null);
+  const earned=g.unlocked;
+  let seen=lsJ('lockinbeta-seen-b2',null);
   const msgs=[];
-  if(!Array.isArray(seen)){lsW('lockinbeta-seen-badges',earned);}
-  else{const fresh=g.badges.filter(b=>b.got&&seen.indexOf(b.id)<0);
-    if(fresh.length){lsW('lockinbeta-seen-badges',seen.concat(fresh.map(b=>b.id)));
-      msgs.push([fresh.length===1?'New badge · '+fresh[0].name:fresh.length+' new badges',{label:'View',fn:openBadges}]);}}
+  if(!Array.isArray(seen)){lsW('lockinbeta-seen-b2',earned);}
+  else{const fresh=earned.filter(k=>seen.indexOf(k)<0);
+    if(fresh.length){lsW('lockinbeta-seen-b2',seen.concat(fresh));revealQueue(fresh);}}
   let fz=lsJ('lockinbeta-seen-frozen',null);
   if(!Array.isArray(fz)){lsW('lockinbeta-seen-frozen',g.frozen);}
   else{const nf=g.frozen.filter(d=>fz.indexOf(d)<0);
@@ -882,8 +998,54 @@ function openLevel(){
 }
 function openBadges(){
   const g=G;
-  openPanel('Badges · '+g.earned+' of '+g.badges.length,`<div class="badges">${g.badges.map((b,i)=>`<div class="badge${b.got?'':' locked'}">${hexHtml(b,i)}<span>${esc(b.name)}</span><small>${b.got?'Earned':esc(b.prog)}</small></div>`).join('')}</div>`);
+  openPanel('Badges · '+g.earned+' of '+g.totalB,`
+    <span class="eyebrow">Level up · bronze, silver, gold, diamond</span>
+    <div class="badges">${g.families.map(badgeCard).join('')}</div>
+    <span class="eyebrow">Specials</span>
+    <div class="badges">${g.specials.map(badgeCard).join('')}</div>`);
+  $('panelBody').querySelectorAll('[data-bid]').forEach(el=>el.addEventListener('click',()=>{const b=g.badges.find(x=>x.id===el.dataset.bid);if(b)badgeInfo(b);}));
 }
+function badgeInfo(b){
+  if(b.family){
+    openPanel(b.name,`<div class="binfo">${medal(b,120)}</div>
+      <p>${b.lvl?`<b>${TIERS[b.lvl-1][0]}</b>. ${esc(b.say)}.`:`Not earned yet. ${esc(b.say)}.`} ${b.next?`Next: <b>${esc(b.next[1])}</b> at ${b.next[0]}.`:'You\u2019ve maxed this one out.'}</p>
+      <ul class="chist">${b.tiers.map((t,k)=>`<li class="${k<b.lvl?'ok':''}"><span class="tdot" style="background:${TIERS[k][1]}"></span><div>${esc(t[1])}<span>${TIERS[k][0]} · ${t[0]} ${esc(b.unit)}</span></div><b>${k<b.lvl?'Earned':Math.min(b.val,t[0])+' / '+t[0]}</b></li>`).join('')}</ul>
+      <button class="btn" id="backBadges">All badges</button>`);
+  }else{
+    openPanel(b.name,`<div class="binfo">${medal(b,120)}</div><p>${esc(b.desc)}. ${b.got?'<b>Earned.</b>':esc(b.hint||'')}</p><button class="btn" id="backBadges">All badges</button>`);
+  }
+  $('backBadges').addEventListener('click',openBadges);
+}
+/* unlock reveal: one badge at a time, full screen */
+let rq=[];
+function revealQueue(keys){
+  const items=keys.map(k=>{const [id,t]=k.split(':');const b=G.badges.find(x=>x.id===id);return b?{b,tier:t?+t:null}:null;}).filter(Boolean);
+  // a family that jumped several tiers at once only shows its highest
+  const best={}; items.forEach(x=>{const k=x.b.id;if(!best[k]||(x.tier||0)>(best[k].tier||0))best[k]=x;});
+  let add=Object.values(best);
+  // a big batch (say, data arriving from another device) gets one reveal and a pointer to the rest
+  if(add.length>3){const top=Object.assign({},add[0],{more:add.length-1});add=[top];}
+  rq=rq.concat(add);
+  if(!fxOn()){const x=rq[0],n=rq.length;rq=[];toast((n>1?n+' new badges':'New badge · '+(x.tier?x.b.tiers[x.tier-1][1]:x.b.name)),{label:'View',fn:openBadges});return;}
+  setTimeout(()=>{if($('reveal').hidden&&$('fx').hidden)nextReveal();},0);
+}
+function nextReveal(){
+  const x=rq.shift(); if(!x){$('reveal').hidden=true;return;}
+  const b=x.b, name=x.tier?b.tiers[x.tier-1][1]:b.name, tierName=x.tier?TIERS[x.tier-1][0]:(b.secret?'Secret':'Special');
+  $('revMedal').innerHTML=medal(b,168,x.tier?{tier:x.tier}:{});
+  $('revEyebrow').textContent=x.more?(x.more+1)+' new badges':'New badge · '+tierName+(rq.length?' · '+rq.length+' more':'');
+  $('revName').textContent=name;
+  $('revText').textContent=(x.tier?`${TIERS[x.tier-1][0]} tier. ${b.say}.`:b.desc+'.')+(x.more?` Plus ${x.more} more waiting on your shelf.`:'');
+  $('revGo').textContent=x.more?'See them all':rq.length?'Next badge':'Nice';
+  $('revGo').dataset.all=x.more?'1':'';
+  $('revAll').hidden=!!x.more;
+  $('reveal').style.setProperty('--glow',x.tier?TIERS[x.tier-1][1]:(SPEC[b.id]||['#8B7CF6'])[0]);
+  $('reveal').hidden=false; buzz([20,30,20,30,60]);
+  const m=$('revMedal'); m.classList.remove('pop'); void m.offsetWidth; m.classList.add('pop');
+  requestAnimationFrame(()=>$('revGo').focus());
+}
+$('revGo').addEventListener('click',()=>{if($('revGo').dataset.all){rq=[];$('reveal').hidden=true;openBadges();}else nextReveal();});
+$('revAll').addEventListener('click',()=>{rq=[];$('reveal').hidden=true;openBadges();});
 function openStreak(){
   const g=G, last=[];
   for(let i=13;i>=0;i--){const dt=plus(g.T,-i),x=g.days.find(d=>+d.dt===+dt);last.push({dt,on:x&&x.logged,frz:x&&x.frozen});}
@@ -904,6 +1066,7 @@ function openChallenge(){
 }
 $('lvlCard').addEventListener('click',openLevel);
 $('badgeBtn').addEventListener('click',openBadges);
+$('nextBadge').addEventListener('click',openBadges);
 $('streakTile').addEventListener('click',openStreak);
 $('chalCard').addEventListener('click',openChallenge);
 
@@ -926,10 +1089,10 @@ function celebrate(d){
   clearTimeout(fxTimer); fxTimer=setTimeout(closeFx,4200);
   requestAnimationFrame(()=>$('fxGo').focus());
 }
-function closeFx(){clearTimeout(fxTimer);$('fx').hidden=true;$('fxBits').innerHTML='';}
+function closeFx(){clearTimeout(fxTimer);$('fx').hidden=true;$('fxBits').innerHTML='';if(rq.length&&$('reveal').hidden)setTimeout(nextReveal,250);}
 $('fxGo').addEventListener('click',closeFx);
 $('fx').addEventListener('click',e=>{if(e.target===$('fx')||e.target.closest('.fxbox'))closeFx();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('fx').hidden)closeFx();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('fx').hidden)closeFx();if(e.key==='Escape'&&!$('reveal').hidden){rq=[];$('reveal').hidden=true;}});
 function afterTick(d,before){
   const now2=snapDay(d);
   if(!before.full&&now2.full){celebrate(d);return;}
