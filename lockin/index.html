@@ -745,7 +745,9 @@ function saveLocal(){
 }
 function save(){ if(cloud&&user)cloud.push(); saveLocal(); }
 /* accounts: optional sign-in that syncs this ledger across devices (Firebase, loaded on demand from cloud.js) */
-const FIREBASE_CONFIG=(window.__lockinTest&&window.__lockinTest.config)||null;
+const FIREBASE_CONFIG=(window.__lockinTest&&window.__lockinTest.config)||{
+  apiKey:'AIzaSyAm6n9Bq8j0_DzisOAP3wagLRT1Tgn0NjY', authDomain:'lockin-app-795ad.firebaseapp.com', projectId:'lockin-app-795ad',
+  storageBucket:'lockin-app-795ad.firebasestorage.app', messagingSenderId:'297256555852', appId:'1:297256555852:web:35e16426f601a2eedf2be9'};
 const OWNER_KEY='lockin-owner', EMAIL_KEY='lockin-email', GUEST_KEY='lockin-guest';
 const lsGet=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
