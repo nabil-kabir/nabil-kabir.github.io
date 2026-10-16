@@ -313,6 +313,38 @@ i.flame svg path{fill:var(--w5)}
 @media (prefers-reduced-motion:reduce){.fxbits{display:none}.xpfloat{animation:none;opacity:0}}
 @media (max-width:720px){.game{grid-template-columns:minmax(0,1fr);gap:10px}.lvlcard,.chalcard{padding:14px 16px}.ladder b{font-size:10.5px}}
 
+.tour{position:fixed;inset:0;z-index:77}
+.tourhole{position:fixed;border-radius:14px;box-shadow:0 0 0 2px rgba(239,235,227,.85),0 0 0 9999px rgba(5,6,10,.8);transition:left .3s ease,top .3s ease,width .3s ease,height .3s ease,opacity .2s;pointer-events:none}
+.tourbox{position:fixed;background:#1B1F2B;border:1px solid #2A3040;border-radius:18px;padding:16px 18px 14px;display:grid;gap:8px;box-shadow:0 20px 50px rgba(0,0,0,.55)}
+.tourbox::before{content:"";position:absolute;left:calc(var(--ax,50%) - 9px);top:-9px;width:16px;height:16px;background:#1B1F2B;border-left:1px solid #2A3040;border-top:1px solid #2A3040;transform:rotate(45deg);border-radius:3px 0 0 0}
+.tourbox.up::before{top:auto;bottom:-9px;transform:rotate(225deg)}
+.tourtop{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.tourtop .linkbtn{padding:4px 0;font-size:13px}
+.tourbox h5{margin:0;font-family:var(--display);font-weight:800;font-size:24px;letter-spacing:.03em;text-transform:uppercase;line-height:1}
+.tourbox p{margin:0;font-size:14.5px;line-height:1.5;color:#D6D3CC}
+.tourfoot{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.tourdots{display:flex;gap:5px;align-items:center}
+.tourdots i{width:6px;height:6px;border-radius:3px;background:#4A5163;transition:width .2s}
+.tourdots i.on{width:20px;background:var(--chalk)}
+.tournext{width:42px;height:42px;border-radius:12px;background:var(--chalk);color:var(--ink);display:grid;place-items:center}
+.tournext:hover{background:#fff}
+.tournext .chk{display:none}.tournext.done .chk{display:block}.tournext.done .arr{display:none}
+.gsec{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;align-items:start}
+.gnum{width:28px;height:28px;border-radius:50%;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.gsec h5{margin:2px 0 6px;font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:.03em;text-transform:uppercase}
+.gsec>div{display:grid;gap:8px;min-width:0}
+.gtab{width:100%;border-collapse:collapse;font-size:13.5px}
+.gtab td{padding:7px 0;border-top:1px solid var(--line-soft);color:var(--muted)}
+.gtab td:last-child{text-align:right;font-family:var(--mono);color:var(--chalk);white-space:nowrap;padding-left:10px}
+.gscroll{overflow-x:auto}
+.gtiers{border-collapse:collapse;font-size:12.5px;min-width:420px;width:100%}
+.gtiers th{text-align:left;font-weight:600;padding:7px 8px 7px 0;white-space:nowrap;border-top:1px solid var(--line-soft)}
+.gtiers td{padding:7px 6px;border-top:1px solid var(--line-soft);vertical-align:top}
+.gtiers td b{display:block;font-weight:600;font-size:12.5px}
+.gtiers td span{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.glist{margin:0;padding-left:18px;display:grid;gap:7px;font-size:13.5px;color:var(--muted)}
+.glist b{color:var(--chalk);font-weight:600}
+
 /* account: sign-in screen, account button, sync status */
 .nav .acct{width:42px;height:42px;border-radius:50%;font-family:var(--display);font-weight:800;font-size:19px;text-transform:uppercase;background:var(--chalk);color:var(--ink);border-color:var(--chalk)}
 .nav .acct:hover{background:#fff;border-color:#fff}
@@ -486,6 +518,7 @@ i.flame svg path{fill:var(--w5)}
     <div class="gamebar">
       <button class="chip" id="badgeBtn">Badges <span class="num" id="badgeCount"></span></button>
       <button class="chip" id="recapBtn">Monthly recap</button>
+      <button class="chip" id="guideBtn">How it works</button>
     </div>
     <button class="nextbadge" id="nextBadge" hidden aria-label="See badges"></button>
   </section>
@@ -537,6 +570,16 @@ i.flame svg path{fill:var(--w5)}
     <div class="sheet big">
       <div class="panelhead"><h4 id="panelTitle"></h4><button class="mini closex" id="panelClose" aria-label="Close"><svg width="12" height="12" viewBox="0 0 14 14"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
       <div id="panelBody" class="panelbody"></div>
+    </div>
+  </div>
+
+  <div class="tour" id="tour" hidden role="dialog" aria-modal="true" aria-labelledby="tourTitle">
+    <div class="tourhole" id="tourHole" aria-hidden="true"></div>
+    <div class="tourbox" id="tourBox">
+      <div class="tourtop"><span class="eyebrow" id="tourCount"></span><button class="linkbtn" id="tourSkip">Skip tour</button></div>
+      <h5 id="tourTitle"></h5>
+      <p id="tourText"></p>
+      <div class="tourfoot"><span class="tourdots" id="tourDots" aria-hidden="true"></span><button class="tournext" id="tourNext" aria-label="Next tip"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path class="arr" d="M3.5 9h11M10 4.5 14.5 9 10 13.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path class="chk" d="m3.5 9.5 3.5 3.5 7.5-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
     </div>
   </div>
 
@@ -1206,6 +1249,102 @@ function renderRecapBanner(){
   $('recapBanNo').onclick=()=>{try{localStorage.setItem(key,'1');}catch(e){}ban.hidden=true;};
 }
 if(window.__lockinTest)window.__lockinGame={build:()=>buildGame(),state:()=>state};
+/* tour: coach marks that point at each part of the app, shown once per device, replayable from the Guide */
+const TOUR_KEY='lockin-tour-v1';
+function tourSteps(){
+  const n=state.habits.length, need=Math.ceil(n/2), today=isCur()?now.getDate():1;
+  const firstTick=document.querySelector(`.tick[data-d="${today}"]`)||document.querySelector('.tick');
+  return [
+    {el:firstTick, pad:8, title:'Tick to log', text:`Tap a box to log a habit for that day. Today's column is highlighted. Ticking an exercise also ticks its habit, and every tick earns XP.`},
+    {el:document.querySelector('.tog'), pad:6, title:'Open a habit', text:'Tap the arrow to show the exercises inside a habit. Use + to add one and − to remove one.'},
+    {el:$('streakTile'), pad:0, title:'Your streak', text:`A streak day is any day you tick at least ${need} of your ${n} habits. Miss one and a freeze can save you. Tap here to see your freezes.`},
+    {el:$('lvlCard'), pad:0, title:'XP and rank', text:'Ticks, full days, monthly goals and challenges all earn XP. Climb from Rookie to Locked In. Tap for the breakdown.'},
+    {el:$('chalCard'), pad:0, title:'Weekly challenge', text:'Every Monday you get a new challenge built around your weakest habit. Finish it by Sunday for +150 XP.'},
+    {el:$('nextBadge'), pad:0, title:'Next badge', text:'This is the badge you’re closest to and exactly what it takes to unlock it.'},
+    {el:$('badgeBtn'), pad:4, title:'32 badges', text:'Five badges level up from Bronze to Diamond, plus specials and two secrets. Tap any badge for its rule.'},
+    {el:$('guideBtn'), pad:4, title:'Guide', text:'Everything about streaks, XP and badges lives here, and you can replay this tour any time.', last:true}
+  ].filter(s=>s.el&&s.el.offsetParent!==null);
+}
+let tour=null;
+function startTour(){
+  if(!state.habits.length)return;
+  const steps=tourSteps(); if(!steps.length)return;
+  closePanel(); tour={steps,i:0}; $('tour').hidden=false; document.documentElement.style.overflow='hidden';
+  showStep();
+}
+function endTour(){
+  tour=null; $('tour').hidden=true; document.documentElement.style.overflow='';
+  try{localStorage.setItem(TOUR_KEY,'1');}catch(e){}
+}
+function showStep(){
+  if(!tour)return; const st=tour.steps[tour.i];
+  $('tourTitle').textContent=st.title; $('tourText').textContent=st.text;
+  $('tourDots').innerHTML=tour.steps.map((_,k)=>`<i class="${k===tour.i?'on':''}"></i>`).join('');
+  $('tourNext').setAttribute('aria-label',tour.i===tour.steps.length-1?'Finish the tour':'Next tip');
+  $('tourNext').classList.toggle('done',tour.i===tour.steps.length-1);
+  $('tourCount').textContent=(tour.i+1)+' of '+tour.steps.length;
+  $('tourBox').style.visibility='hidden'; $('tourHole').style.opacity='0';
+  const r0=st.el.getBoundingClientRect();
+  if(r0.top<90||r0.bottom>innerHeight-240){const y=scrollY+r0.top-Math.max(90,(innerHeight-r0.height)/2-110);window.scrollTo({top:Math.max(0,y),behavior:'auto'});}
+  // a sideways-scrolling grid also needs the ticked column in view
+  const sc=$('scroller'); if(sc&&sc.contains(st.el)&&st.el.closest('td')){const td=st.el.closest('td');const left=td.offsetLeft-sc.clientWidth/2;if(left>0)sc.scrollLeft=left;}
+  requestAnimationFrame(()=>requestAnimationFrame(placeStep));
+}
+function placeStep(){
+  if(!tour)return; const st=tour.steps[tour.i], r=st.el.getBoundingClientRect(), p=st.pad, hole=$('tourHole'), box=$('tourBox');
+  hole.style.left=(r.left-p)+'px'; hole.style.top=(r.top-p)+'px'; hole.style.width=(r.width+2*p)+'px'; hole.style.height=(r.height+2*p)+'px';
+  hole.style.borderRadius=getComputedStyle(st.el).borderRadius||'14px'; hole.style.opacity='1';
+  const W=Math.min(360,innerWidth-32), gap=16; box.style.width=W+'px'; const bh=box.offsetHeight||180;
+  const below=r.bottom+p+gap+bh<innerHeight-12 || r.top-p-gap-bh<12;
+  let left=Math.max(16,Math.min(innerWidth-16-W,r.left+r.width/2-W/2));
+  const top=below?r.bottom+p+gap:r.top-p-gap-bh;
+  box.style.width=W+'px'; box.style.left=left+'px'; box.style.top=Math.max(12,top)+'px';
+  box.classList.toggle('up',!below);
+  const ax=Math.max(22,Math.min(W-22,r.left+r.width/2-left)); box.style.setProperty('--ax',ax+'px');
+  box.style.visibility='visible'; $('tourNext').focus({preventScroll:true});
+}
+$('tourNext').addEventListener('click',()=>{if(!tour)return;if(tour.i>=tour.steps.length-1){endTour();return;}tour.i++;showStep();});
+$('tourSkip').addEventListener('click',endTour);
+document.addEventListener('keydown',e=>{if(!tour)return;if(e.key==='Escape')endTour();else if(e.key==='ArrowRight'||e.key==='Enter'){e.preventDefault();$('tourNext').click();}});
+addEventListener('resize',()=>{if(tour)placeStep();});
+addEventListener('scroll',()=>{if(tour&&$('tourBox').style.visibility==='visible')placeStep();},{passive:true});
+function tourDue(){try{return localStorage.getItem(TOUR_KEY)!=='1';}catch(e){return false;}}
+function maybeTour(delay){
+  if(!tourDue())return;
+  setTimeout(()=>{if(!tourDue()||tour)return;
+    if(!$('auth').hidden||!$('dlg').hidden||!$('fx').hidden||!$('reveal').hidden||!$('panel').hidden){maybeTour(1500);return;}
+    startTour();},delay||900);
+}
+
+/* the full guide */
+function openGuide(){
+  const g=G, n=state.habits.length, need=Math.ceil(n/2), gh=state.habits.find(h=>+h.goal>0);
+  const tierRow=f=>`<tr><th>${esc(f.id==='streak'?'Streak':f.id==='ticks'?'Habit ticks':f.id==='full'?'Full days':f.id==='goals'?'Monthly goals':'Challenges')}</th>${f.tiers.map((t,k)=>`<td><b style="color:${TIERS[k][1]}">${esc(t[1])}</b><span>${t[0].toLocaleString('en')}</span></td>`).join('')}</tr>`;
+  openPanel('How to play',`
+    <div class="gsec"><span class="gnum">1</span><div><h5>Your daily target</h5>
+      <p>Tick at least <b>${need} of your ${n} habits</b> to make the day a <b>streak day</b>. Tick all ${n} for a <b>full day</b>, which earns bonus XP and the "Day locked." celebration.</p></div></div>
+    <div class="gsec"><span class="gnum">2</span><div><h5>Streaks and freezes</h5>
+      <p>Your streak is how many streak days you've had in a row. Today never breaks it, so you have until midnight.</p>
+      <p>Each Monday–Sunday week with <b>5 or more streak days</b> earns a <b>freeze</b>, up to 3. If you miss a day, a freeze is used automatically and your streak carries on. Each habit also has its own flame in the Analysis card. Workout days count in weeks, so rest days don't break them.</p></div></div>
+    <div class="gsec"><span class="gnum">3</span><div><h5>XP and ranks</h5>
+      <table class="gtab"><tr><td>Tick a habit</td><td>+10</td></tr><tr><td>Tick an exercise</td><td>+5</td></tr><tr><td>Full day</td><td>+50</td></tr><tr><td>Reach a habit's monthly goal${gh?` (like ${esc(gh.name)} ${gh.goal} days)`:''}</td><td>+200</td></tr><tr><td>Finish the weekly challenge</td><td>+150</td></tr></table>
+      <p>Ranks: ${RANKS.map(r=>`<b>${r[0]}</b> ${r[1].toLocaleString('en')}`).join(' · ')} XP. You're <b>${g.rank[0]}</b> with <b>${g.xp.toLocaleString('en')} XP</b>.</p></div></div>
+    <div class="gsec"><span class="gnum">4</span><div><h5>Weekly challenge</h5>
+      <p>Every Monday the app picks the habit you've ticked least over the last four weeks, compared with its goal, and sets a target just above your usual pace. It never picks the same habit two weeks running. Finish it by Sunday for +150 XP.</p></div></div>
+    <div class="gsec"><span class="gnum">5</span><div><h5>Badges that level up</h5>
+      <p>Each one has four tiers: <b style="color:${TIERS[0][1]}">Bronze</b>, <b style="color:${TIERS[1][1]}">Silver</b>, <b style="color:${TIERS[2][1]}">Gold</b> and <b style="color:${TIERS[3][1]}">Diamond</b>.</p>
+      <div class="gscroll"><table class="gtiers">${g.families.map(tierRow).join('')}</table></div>
+      <p>Streak counts streak days in a row. The others are totals.</p></div></div>
+    <div class="gsec"><span class="gnum">6</span><div><h5>Specials</h5>
+      <ul class="glist">${g.specials.filter(b=>!b.secret).map(b=>`<li><b>${esc(b.name)}.</b> ${esc(b.rule)}</li>`).join('')}<li><b>Two secret badges</b> stay hidden until you find them.</li></ul></div></div>
+    <div class="gsec"><span class="gnum">7</span><div><h5>Fastest ways to level up</h5>
+      <ul class="glist"><li>Aim for full days. Each one is +50 XP and counts toward three badges.</li><li>Set goals you can actually hit. A reached goal is +200 XP, and an unreachable one earns nothing.</li><li>Do the weekly challenge early in the week, then keep going for Hat Trick.</li><li>Keep 5 streak days every week so you always hold a freeze.</li></ul></div></div>
+    <div class="actions" style="justify-content:stretch"><button class="btn" id="guideTour" style="flex:1">Replay the tour</button><button class="btn go" id="guideBadges" style="flex:1">See my badges</button></div>`);
+  $('guideTour').addEventListener('click',()=>{closePanel();window.scrollTo({top:0});setTimeout(startTour,300);});
+  $('guideBadges').addEventListener('click',openBadges);
+}
+$('guideBtn').addEventListener('click',openGuide);
+
 
 
 /* events */
@@ -1479,7 +1618,7 @@ function showAuth(firstRun,lead){
   $('auth').hidden=false; document.documentElement.style.overflow='hidden';
   loadCloud().catch(()=>{});
 }
-function hideAuth(){$('auth').hidden=true;document.documentElement.style.overflow='';$('authPw').value='';}
+function hideAuth(){$('auth').hidden=true;document.documentElement.style.overflow='';$('authPw').value='';maybeTour(900);}
 const AUTH_ERR={
   'auth/invalid-credential':'That email and password don’t match. Check them or reset your password.',
   'auth/wrong-password':'That email and password don’t match. Check them or reset your password.',
@@ -1549,6 +1688,7 @@ if(FIREBASE_CONFIG){
   try{const o=migrate(JSON.parse(raw||'null'));if(o)applyData(o);}catch(e){}
   render();
   if(raw)saveLocal(); else showStatus();
+  maybeTour(1200);
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}catch(e){}
 })();
 $('ver').textContent='v'+APP_VERSION;
