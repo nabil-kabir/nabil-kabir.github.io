@@ -1,5 +1,6 @@
 // Injected by tests before the page loads.
 (function(){
+try{if(!location.hash.includes('tour'))localStorage.setItem('lockin-tour-v1','1');if(!location.hash.includes('fx')&&!location.hash.includes('tour'))localStorage.setItem('lockin-fx','0');}catch(e){}
 const isDel=x=>x&&typeof x==='object'&&x.__del===1;
 const isObj=x=>x&&typeof x==='object'&&!Array.isArray(x)&&!isDel(x);
 function apply(t,p){for(const k of Object.keys(p)){const v=p[k];if(isDel(v))delete t[k];else if(isObj(v)){if(!isObj(t[k]))t[k]={};apply(t[k],v);}else t[k]=v;}return t;}

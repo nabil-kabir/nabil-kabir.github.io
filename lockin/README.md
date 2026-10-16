@@ -30,3 +30,13 @@ Without an account the app works as before, on that device only.
 The data carries a `schema` number. When a change alters the shape of the data, raise `SCHEMA`
 and add a step to `migrate()` in `index.html`, so existing history is upgraded instead of lost.
 "Back up data" exports a JSON file and "Restore" imports one.
+
+## Game layer (2.1.0)
+
+XP and ranks, badges, the streak with freezes, per-habit streaks and weekly challenges are all worked out
+from the ticks in `buildGame()` in `index.html`, so they need no extra storage and sync with the ticks.
+Only per-device extras live in localStorage: `lockin-seen-badges` and `lockin-seen-frozen` (what has already
+been announced), `lockin-fx` (celebrations on or off) and `lockin-recap-YYYY-M` (recap banner dismissed).
+Tuning lives at the top of that block: `RANKS`, `XP`, and the level curve in `buildGame()`.
+The first-run tour (coach marks) is `tourSteps()` in `index.html`; it shows once per device (`lockin-tour-v1`)
+and can be replayed from How it works › Replay the tour. The full guide is `openGuide()`.
